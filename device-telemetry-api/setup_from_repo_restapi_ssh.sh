@@ -1,4 +1,5 @@
 #!/bin/bash
+# setup_from_repo_restapi_ssh.sh 
 set -e
 
 REPO_SSH_URL="git@github.com:LisaMaryLee/samples.git"
@@ -19,17 +20,21 @@ echo "🔐 Cloning repo using SSH..."
 rm -rf $CLONE_DIR
 git clone $REPO_SSH_URL $CLONE_DIR
 
-echo "🔓 Configuring MySQL root plugin and password..."
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}';"
-sudo mysql -e "FLUSH PRIVILEGES;"
+echo "🔍 Checking and fixing MySQL root plugin..."
+PLUGIN=$(sudo mysql -N -B --execute="SELECT plugin FROM mysql.user WHERE user='root' AND host='localhost';" 2>/dev/null || echo "auth_socket")
+if [[ "$PLUGIN" != "mysql_native_password" ]]; then
+    echo "🔧 Switching MySQL root auth plugin to mysql_native_password..."
+    sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}'; FLUSH PRIVILEGES;"
+else
+    echo "✅ MySQL root is already using mysql_native_password."
+fi
 
 echo "🧱 Creating database and application user..."
-sudo mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOF
+mysql -u root -p${MYSQL_ROOT_PASSWORD} --execute="
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
-FLUSH PRIVILEGES;
-EOF
+FLUSH PRIVILEGES;"
 
 echo "📄 Applying schema from SQL file..."
 mysql -u root -p${MYSQL_ROOT_PASSWORD} ${DB_NAME} < "$CLONE_DIR/$SOURCE_SUBDIR/create_device_telemetry_schema.sql"
