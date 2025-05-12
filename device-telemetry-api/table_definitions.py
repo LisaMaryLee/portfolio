@@ -34,8 +34,8 @@ ss_general_model = {
 ss_cartridge_information_model = {
     'cartridge_ID': fields.Integer(required=True, description='Cartridge ID', example=321654900),
     'SID': fields.String(required=True, description='The unique identifier', example="3659890703846945"),
-    'vendor': fields.String(required=True, description='Vendor name', example="Tandberg Data"),
-    'model': fields.String(required=True, description='Model name', example="QuikStation"),
+    'vendor': fields.String(required=True, description='Vendor name', example="Vendor1"),
+    'model': fields.String(required=True, description='Model name', example="ApplianceModel1"),
     'status': fields.String(required=True, description='Status of the cartridge', example="Good"),
     'encrypted_status': fields.String(required=True, description='Encryption status', example="0"),
     'load_count': fields.Integer(required=True, description='Load count', example=25),

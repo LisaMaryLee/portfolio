@@ -47,7 +47,7 @@ source venv/bin/activate
 
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install flask flask-restx mysql-connector-python
+pip install flask flask-restx mysql-connector-python faker
 
 echo "📄 Copying Flask app files..."
 cp $CLONE_DIR/$SOURCE_SUBDIR/dt_RESTAPI.py $APP_DIR/
