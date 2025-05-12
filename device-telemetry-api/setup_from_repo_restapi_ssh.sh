@@ -47,13 +47,14 @@ source venv/bin/activate
 
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install flask flask-restx mysql-connector-python faker
+pip install flask flask-restx mysql-connector-python faker requests
 
 echo "📄 Copying Flask app files..."
 cp $CLONE_DIR/$SOURCE_SUBDIR/dt_RESTAPI.py $APP_DIR/
 cp $CLONE_DIR/$SOURCE_SUBDIR/config.py $APP_DIR/
 cp $CLONE_DIR/$SOURCE_SUBDIR/sql_queries.py $APP_DIR/
 cp $CLONE_DIR/$SOURCE_SUBDIR/table_definitions.py $APP_DIR/
+cp $CLONE_DIR/$SOURCE_SUBDIR/test_dynamic_api_load.py $APP_DIR/
 
 echo "⚙️ Creating systemd service for the REST API..."
 sudo bash -c "cat > /etc/systemd/system/stack_restapi.service" <<EOF
@@ -87,3 +88,8 @@ INTERNAL_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "✅ Full setup complete!"
 echo "📍 Swagger UI available at: http://${INTERNAL_IP}:5000/"
+
+echo ""
+echo "🚀 Launching test_dynamic_api_load.py for 10 entries per route..."
+cd $APP_DIR
+$PYTHON_BIN test_dynamic_api_load.py 10
