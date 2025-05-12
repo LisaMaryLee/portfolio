@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS servostack_REST;
-USE servostack_REST;
+CREATE DATABASE IF NOT EXISTS stack_REST;
+USE stack_REST;
 
 -- Table 1: General System Information
 CREATE TABLE IF NOT EXISTS ss_general (
