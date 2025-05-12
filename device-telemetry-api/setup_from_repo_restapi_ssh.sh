@@ -8,7 +8,7 @@ SOURCE_SUBDIR="device-telemetry-api"
 PYTHON_BIN="$APP_DIR/venv/bin/python"
 SCRIPT_NAME="dt_RESTAPI.py"
 MYSQL_ROOT_PASSWORD="ChangeThisPassword123"
-DB_NAME="servostack_REST"
+DB_NAME="stack_REST"
 DB_USER="1anonusage"
 DB_PASSWORD="eV|76Lf/yoPZ7!3$"
 
@@ -33,6 +33,10 @@ GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
+echo "📄 Applying schema from create_device_telemetry_schema.sql..."
+mysql -u root -p${MYSQL_ROOT_PASSWORD} ${DB_NAME} < "$CLONE_DIR/$SOURCE_SUBDIR/create_device_telemetry_schema.sql"
+
+
 echo "📁 Creating virtualenv in $APP_DIR..."
 mkdir -p $APP_DIR
 cd $APP_DIR
@@ -50,9 +54,9 @@ cp $CLONE_DIR/$SOURCE_SUBDIR/sql_queries.py $APP_DIR/
 cp $CLONE_DIR/$SOURCE_SUBDIR/table_definitions.py $APP_DIR/
 
 echo "⚙️ Creating systemd service file..."
-sudo bash -c "cat > /etc/systemd/system/servostack_restapi.service" <<EOF
+sudo bash -c "cat > /etc/systemd/system/stack_restapi.service" <<EOF
 [Unit]
-Description=Servostack REST API using Flask
+Description=Stack REST API using Flask
 After=network.target mysql.service
 
 [Service]
@@ -66,11 +70,11 @@ ExecStart=$PYTHON_BIN $APP_DIR/$SCRIPT_NAME
 WantedBy=multi-user.target
 EOF
 
-echo "📡 Enabling and starting REST API systemd service..."
+echo "📡 Enabling and starting Stack REST API systemd service..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl enable servostack_restapi.service
-sudo systemctl restart servostack_restapi.service
+sudo systemctl enable stack_restapi.service
+sudo systemctl restart stack_restapi.service
 
 echo "🔐 Configuring firewall to allow port 5000..."
 sudo ufw allow OpenSSH
