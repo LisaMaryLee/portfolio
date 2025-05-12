@@ -2,11 +2,11 @@
 set -e
 
 echo "🧹 Stopping services..."
-sudo systemctl stop restapi.service || true
-sudo systemctl disable restapi.service || true
+sudo systemctl stop stack_restapi.service || true
+sudo systemctl disable stack_restapi.service || true
 
 echo "🧽 Removing service and app files..."
-sudo rm -f /etc/systemd/system/restapi.service
+sudo rm -f /etc/systemd/system/stack_restapi.service
 sudo systemctl daemon-reload
 
 rm -rf $HOME/restapi-samples
