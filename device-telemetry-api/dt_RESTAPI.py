@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
+from flask import Flask, request, jsonify, make_response  # Import Flask and request
+from flask_cors import CORS  # Import CORS for cross-origin resource sharing
+from flask_restx import Api, Resource, fields  # Import Flask-RESTx for building REST APIs
+import mysql.connector  # Import MySQL connector for database operations
+from config import Config  # Import the Config class
+from table_definitions import columns, table_config, models  # Import columns, table config, and models
+from sql_queries import get_insert_query, get_insert_or_replace_query  # Import the SQL query functions
 
-from flask import Flask, request, jsonify, make_response  # Flask core utilities
-from flask_cors import CORS  # Enable CORS for client-side access
-from flask_restx import Api, Resource, fields  # REST API framework with Swagger integration
-import mysql.connector  # Connector for MySQL DB access
-from config import Config  # Centralized configuration class with DB credentials
-from table_definitions import columns, table_config, models  # Schema metadata
-from sql_queries import get_insert_query, get_insert_or_replace_query  # SQL builders
-
-# Initialize Flask and Flask-RESTX API
+# Initialize Flask app and API
 app = Flask(__name__)
 api = Api(
     app,
@@ -17,17 +15,19 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-# Load MySQL connection details from config
+# Load MySQL configurations from the Config class
 app.config.from_object(Config)
 
-# Define namespace for endpoints
+# Define the API namespace without prefix
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register Swagger models
+# Register models with the API namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
-# Define base resource class for data ingestion
+# Enable CORS for the app
+CORS(app)
+
 class SaveData(Resource):
     def __init__(self, table_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,34 +47,24 @@ class SaveData(Resource):
     @ns.response(500, 'Internal Server Error')
     def post(self):
         """
-        Handle POST request for inserting or updating a row in the specified table.
-        Validates input against required columns, schema model, and inserts data into the database.
+        Handle POST requests to insert or update data in the table.
         """
         try:
             data = request.get_json()
 
-            # Reject unexpected or missing keys
+            # --- Mock authorization logic for testing 401 and 403 ---
+            if data.get("mock_unauthorized"):
+                return make_response(jsonify({"error": "Unauthorized"}), 401)
+            if data.get("mock_forbidden"):
+                return make_response(jsonify({"error": "Forbidden"}), 403)
+
+            # --- Unexpected key check ---
             if set(data.keys()) != set(self.columns):
-                extra = set(data.keys()) - set(self.columns)
-                missing = set(self.columns) - set(data.keys())
-                return make_response(jsonify({
-                    "error": "Unexpected or missing keys in payload",
-                    "extra_keys": list(extra),
-                    "missing_keys": list(missing)
-                }), 400)
+                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
-            # Assemble tuple for query
             values = tuple(data[col] for col in self.columns)
+            query = self.query_func(self.table_name, self.columns)
 
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError:
-            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
-
-        query = self.query_func(self.table_name, self.columns)
-
-        try:
-            # Connect and insert
             conn = mysql.connector.connect(
                 host=app.config['MYSQL_HOST'],
                 user=app.config['MYSQL_USER'],
@@ -86,18 +76,22 @@ class SaveData(Resource):
             conn.commit()
             cursor.close()
             conn.close()
+
+        except KeyError as e:
+            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except TypeError:
+            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
         except mysql.connector.Error as err:
             return make_response(jsonify({"error": str(err)}), 500)
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
-# Factory to generate resource class per table dynamically
+# Factory function to create resources for each table
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
-        # Repeat responses for Swagger clarity
         @ns.expect(ns.models[table_name], validate=True)
         @ns.response(200, 'Success')
         @ns.response(201, 'Data saved successfully')
@@ -114,14 +108,16 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Bind all table endpoints to /<table_name>
+# Register the endpoints for each table dynamically
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register web viewer route
+# Add the namespace to the API
+api.add_namespace(ns)
+
+# Viewer route support
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
-# Entry point for running the Flask app
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

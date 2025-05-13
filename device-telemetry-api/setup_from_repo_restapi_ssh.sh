@@ -124,3 +124,7 @@ $PYTHON_BIN $APP_DIR/view_mysql_table.py
 # Show URLs to user
 echo "🔎 UI to view the live database available at: http://${INTERNAL_IP}:5000/viewer"
 echo "🔎 Swagger UI available at: http://${INTERNAL_IP}:5000"
+
+echo ""
+echo "🔍 Running negative test coverage..."
+$PYTHON_BIN $APP_DIR/test_restapi_negative_handling.py
