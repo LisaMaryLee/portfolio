@@ -9,7 +9,10 @@ echo "🧽 Removing service and app files..."
 sudo rm -f /etc/systemd/system/stack_restapi.service
 sudo systemctl daemon-reload
 
+echo "🗑️ Removing Python virtual environment..."
 rm -rf $HOME/restapi-samples
+echo "🗑️ samples repo"
+rm -rf $HOME/samples
 
 echo "🗑️ Removing MySQL (if needed)..."
 sudo systemctl stop mysql || true
