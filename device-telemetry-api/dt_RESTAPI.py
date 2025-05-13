@@ -14,10 +14,13 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
+# Load database config
 app.config.from_object(Config)
 
+# Register namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
+# Register models with the namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -42,20 +45,24 @@ class SaveData(Resource):
         """
         Handle POST requests for ingesting data into the specified table.
         """
+        # Check authorization
         auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header != "Bearer valid_token":
+        if auth_header and not auth_header.startswith("Bearer valid_token"):
             return make_response(jsonify({"error": "Unauthorized"}), 401)
 
+        # Check permissions
         if request.headers.get("X-Permissions") == "none":
             return make_response(jsonify({"error": "Forbidden"}), 403)
 
         try:
             data = request.get_json()
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
+            # Simulate 500 internal error for testing
             if "bad_column" in data:
                 raise mysql.connector.Error("Simulated internal server error")
+
+            if set(data.keys()) != set(self.columns):
+                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
             values = tuple(data[col] for col in self.columns)
 
@@ -104,9 +111,11 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
+# Register each route
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
+# Register additional viewer routes if present
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
