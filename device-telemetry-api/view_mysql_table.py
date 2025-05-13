@@ -16,21 +16,6 @@ table_definitions = importlib.util.module_from_spec(spec_defs)
 spec_defs.loader.exec_module(table_definitions)
 
 tables = list(table_definitions.models.keys())
-print("\n📋 Available tables:")
-for idx, name in enumerate(tables):
-    print(f"{idx+1}. {name}")
-
-choice = input("\nEnter the number of the table to view: ").strip()
-if not choice.isdigit() or int(choice) < 1 or int(choice) > len(tables):
-    print("❌ Invalid choice.")
-    exit(1)
-
-table = tables[int(choice) - 1]
-columns = table_definitions.columns[table]
-fields = ", ".join(columns)
-order_column = columns[0]  # Assume first column is primary key or timestamp
-
-print(f"\n🔍 Querying table: {table}\n")
 
 try:
     conn = mysql.connector.connect(
@@ -40,23 +25,23 @@ try:
         database=config.Config.MYSQL_DB
     )
     cursor = conn.cursor()
-    cursor.execute(f"SELECT {fields} FROM {table} ORDER BY {order_column} DESC LIMIT 20")
-    rows = cursor.fetchall()
-    print(tabulate(rows, headers=columns, tablefmt="grid"))
 
-    # Generate HTML
-    html_table = tabulate(rows, headers=columns, tablefmt="html")
-    html_path = os.path.expanduser(f"~/restapi-telemetry/output_{table}.html")
-    with open(html_path, "w") as f:
-        f.write(f"<html><head><title>{table} Data</title></head><body><h2>Latest 20 rows from table: {table}</h2>{html_table}</body></html>")
+    for table in tables:
+        columns = table_definitions.columns[table]
+        fields = ", ".join(columns)
+        order_column = columns[0]
 
-    print(f"\n🌐 HTML output saved to: {html_path}")
+        print(f"\n🔍 Querying table: {table}\n")
+        cursor.execute(f"SELECT {fields} FROM {table} ORDER BY {order_column} DESC LIMIT 20")
+        rows = cursor.fetchall()
+
+        if rows:
+            print(tabulate(rows, headers=columns, tablefmt="grid"))
+        else:
+            print("⚠️ No data found.")
+
+    cursor.close()
+    conn.close()
 
 except Exception as e:
     print(f"❌ Error: {e}")
-
-finally:
-    if 'cursor' in locals():
-        cursor.close()
-    if 'conn' in locals():
-        conn.close()

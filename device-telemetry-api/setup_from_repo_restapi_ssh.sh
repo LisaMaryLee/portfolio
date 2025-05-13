@@ -84,7 +84,6 @@ sudo ufw --force enable
 INTERNAL_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "✅ Full setup complete!"
-echo "📍 Swagger UI available at: http://${INTERNAL_IP}:5000/"
 
 echo ""
 echo "🚀 Launching test_dynamic_api_load.py for 10 entries per route..."
@@ -95,3 +94,4 @@ echo "🔎 Launching view_mysql_table.py to inspect the database..."
 $PYTHON_BIN $APP_DIR/view_mysql_table.py
 
 echo "🔎 UI to view the live database available at: http://${INTERNAL_IP}:5000/viewer"
+echo "🔎 Swagger UI available at: http://${INTERNAL_IP}:5000"
