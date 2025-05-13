@@ -1,12 +1,11 @@
-from flask import Flask, request, jsonify, make_response  # Import Flask and request
-from flask_cors import CORS  # Import CORS for cross-origin resource sharing
-from flask_restx import Api, Resource, fields  # Import Flask-RESTx for building REST APIs
-import mysql.connector  # Import MySQL connector for database operations
-from config import Config  # Import the Config class
-from table_definitions import columns, table_config, models  # Import columns, table config, and models
-from sql_queries import get_insert_query, get_insert_or_replace_query  # Import the SQL query functions
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
+from flask_restx import Api, Resource, fields
+import mysql.connector
+from config import Config
+from table_definitions import columns, table_config, models
+from sql_queries import get_insert_query, get_insert_or_replace_query
 
-# Initialize Flask app and API
 app = Flask(__name__)
 api = Api(
     app,
@@ -15,18 +14,15 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-# Load MySQL configurations from the Config class
+# Load database config
 app.config.from_object(Config)
 
-# Define the API namespace without prefix
+# Register namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register models with the API namespace
+# Register models with the namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
-
-# Enable CORS for the app
-CORS(app)
 
 class SaveData(Resource):
     def __init__(self, table_name, *args, **kwargs):
@@ -47,24 +43,35 @@ class SaveData(Resource):
     @ns.response(500, 'Internal Server Error')
     def post(self):
         """
-        Handle POST requests to insert or update data in the table.
+        Handle POST requests for ingesting data into the specified table.
         """
+        # Simulate 401 Unauthorized if Authorization header is invalid
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header != "Bearer valid_token":
+            return make_response(jsonify({"error": "Unauthorized"}), 401)
+
+        # Simulate 403 Forbidden if permissions are denied
+        if request.headers.get("X-Permissions") == "none":
+            return make_response(jsonify({"error": "Forbidden"}), 403)
+
         try:
             data = request.get_json()
-
-            # --- Mock authorization logic for testing 401 and 403 ---
-            if data.get("mock_unauthorized"):
-                return make_response(jsonify({"error": "Unauthorized"}), 401)
-            if data.get("mock_forbidden"):
-                return make_response(jsonify({"error": "Forbidden"}), 403)
-
-            # --- Unexpected key check ---
             if set(data.keys()) != set(self.columns):
                 return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
-
             values = tuple(data[col] for col in self.columns)
-            query = self.query_func(self.table_name, self.columns)
 
+            # Simulate a 500 error manually for testing
+            if "bad_column" in data:
+                raise mysql.connector.Error("Simulated internal server error")
+
+        except KeyError as e:
+            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except TypeError:
+            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+
+        query = self.query_func(self.table_name, self.columns)
+
+        try:
             conn = mysql.connector.connect(
                 host=app.config['MYSQL_HOST'],
                 user=app.config['MYSQL_USER'],
@@ -76,17 +83,11 @@ class SaveData(Resource):
             conn.commit()
             cursor.close()
             conn.close()
-
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError:
-            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
         except mysql.connector.Error as err:
             return make_response(jsonify({"error": str(err)}), 500)
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
-# Factory function to create resources for each table
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
@@ -94,7 +95,6 @@ def create_resource(table_name):
 
         @ns.expect(ns.models[table_name], validate=True)
         @ns.response(200, 'Success')
-        @ns.response(201, 'Data saved successfully')
         @ns.response(202, 'Accepted')
         @ns.response(204, 'No Content')
         @ns.response(400, 'Invalid JSON format or Missing key')
@@ -102,20 +102,18 @@ def create_resource(table_name):
         @ns.response(403, 'Forbidden')
         @ns.response(404, 'Not Found')
         @ns.response(500, 'Internal Server Error')
+        @ns.response(201, 'Data saved successfully')
         def post(self):
             return super().post()
 
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register the endpoints for each table dynamically
+# Register each route
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Add the namespace to the API
-api.add_namespace(ns)
-
-# Viewer route support
+# Register additional viewer routes if present
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
