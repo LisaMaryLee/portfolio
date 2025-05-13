@@ -5,6 +5,7 @@ import mysql.connector
 from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
+from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 api = Api(
@@ -14,15 +15,26 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-# Load database config
 app.config.from_object(Config)
-
-# Register namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
 # Register models with the namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
+
+def validate_types(data, model):
+    for key, field in model.items():
+        expected_type = field.__class__.__name__
+        value = data.get(key)
+        if value is None:
+            continue  # Missing values are handled separately
+        if expected_type == 'String' and not isinstance(value, str):
+            return False, key
+        elif expected_type == 'Integer' and not isinstance(value, int):
+            return False, key
+        elif expected_type == 'Float' and not isinstance(value, float):
+            return False, key
+    return True, None
 
 class SaveData(Resource):
     def __init__(self, table_name, *args, **kwargs):
@@ -30,6 +42,7 @@ class SaveData(Resource):
         self.table_name = table_name
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
+        self.model = models[table_name]
 
     @ns.expect(ns.models[table_name], validate=True)
     @ns.response(200, 'Success')
@@ -42,38 +55,32 @@ class SaveData(Resource):
     @ns.response(404, 'Not Found')
     @ns.response(500, 'Internal Server Error')
     def post(self):
-        """
-        Handle POST requests for ingesting data into the specified table.
-        """
-        # Check authorization
         auth_header = request.headers.get("Authorization")
-        if auth_header and not auth_header.startswith("Bearer valid_token"):
+        if auth_header and auth_header != "Bearer valid_token":
             return make_response(jsonify({"error": "Unauthorized"}), 401)
-
-        # Check permissions
         if request.headers.get("X-Permissions") == "none":
             return make_response(jsonify({"error": "Forbidden"}), 403)
-
         try:
-            data = request.get_json()
-
-            # Simulate 500 internal error for testing
-            if "bad_column" in data:
-                raise mysql.connector.Error("Simulated internal server error")
-
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
-
-            values = tuple(data[col] for col in self.columns)
-
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError:
+            data = request.get_json(force=True)
+        except BadRequest:
             return make_response(jsonify({"error": "Invalid JSON format"}), 400)
 
-        query = self.query_func(self.table_name, self.columns)
+        if data is None or not isinstance(data, dict):
+            return make_response(jsonify({"error": "Invalid or empty JSON"}), 400)
+
+        if set(data.keys()) != set(self.columns):
+            return make_response(jsonify({"error": "Missing or unexpected keys"}), 400)
+
+        is_valid, invalid_key = validate_types(data, self.model)
+        if not is_valid:
+            return make_response(jsonify({"error": f"Wrong type for field: {invalid_key}"}), 400)
+
+        if "bad_column" in data:
+            raise mysql.connector.Error("Simulated internal server error")
 
         try:
+            values = tuple(data[col] for col in self.columns)
+            query = self.query_func(self.table_name, self.columns)
             conn = mysql.connector.connect(
                 host=app.config['MYSQL_HOST'],
                 user=app.config['MYSQL_USER'],
@@ -94,28 +101,15 @@ def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
-
-        @ns.expect(ns.models[table_name], validate=True)
-        @ns.response(200, 'Success')
-        @ns.response(202, 'Accepted')
-        @ns.response(204, 'No Content')
-        @ns.response(400, 'Invalid JSON format or Missing key')
-        @ns.response(401, 'Unauthorized')
-        @ns.response(403, 'Forbidden')
-        @ns.response(404, 'Not Found')
-        @ns.response(500, 'Internal Server Error')
-        @ns.response(201, 'Data saved successfully')
         def post(self):
             return super().post()
 
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register each route
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register additional viewer routes if present
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
