@@ -3,7 +3,7 @@
 set -e
 
 REPO_SSH_URL="git@github.com:LisaMaryLee/samples.git"
-APP_DIR="$HOME/restapi-samples"
+APP_DIR="$HOME/restapi-telemetry"
 CLONE_DIR="$HOME/samples"
 SOURCE_SUBDIR="device-telemetry-api"
 PYTHON_BIN="$APP_DIR/venv/bin/python"
@@ -39,7 +39,7 @@ FLUSH PRIVILEGES;"
 echo "📄 Applying schema from SQL file..."
 mysql -u root -p${MYSQL_ROOT_PASSWORD} ${DB_NAME} < "$CLONE_DIR/$SOURCE_SUBDIR/create_device_telemetry_schema.sql"
 
-echo "📁 Setting up virtual environment at $APP_DIR..."
+echo "📁 Setting up Python virtual environment in: $APP_DIR"
 mkdir -p $APP_DIR
 cd $APP_DIR
 python3 -m venv venv
@@ -49,12 +49,8 @@ echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
 pip install flask flask-restx mysql-connector-python faker requests tabulate
 
-echo "📄 Copying Flask app files..."
-cp $CLONE_DIR/$SOURCE_SUBDIR/dt_RESTAPI.py $APP_DIR/
-cp $CLONE_DIR/$SOURCE_SUBDIR/config.py $APP_DIR/
-cp $CLONE_DIR/$SOURCE_SUBDIR/sql_queries.py $APP_DIR/
-cp $CLONE_DIR/$SOURCE_SUBDIR/table_definitions.py $APP_DIR/
-cp $CLONE_DIR/$SOURCE_SUBDIR/test_dynamic_api_load.py $APP_DIR/
+echo "📄 Copying Flask app and test/viewer scripts..."
+cp $CLONE_DIR/$SOURCE_SUBDIR/*.py $APP_DIR/
 
 echo "⚙️ Creating systemd service for the REST API..."
 sudo bash -c "cat > /etc/systemd/system/stack_restapi.service" <<EOF
@@ -91,5 +87,8 @@ echo "📍 Swagger UI available at: http://${INTERNAL_IP}:5000/"
 
 echo ""
 echo "🚀 Launching test_dynamic_api_load.py for 10 entries per route..."
-cd $APP_DIR
-$PYTHON_BIN test_dynamic_api_load.py 10
+$PYTHON_BIN $APP_DIR/test_dynamic_api_load.py 10
+
+echo ""
+echo "🔎 Launching view_mysql_table.py to inspect the database..."
+$PYTHON_BIN $APP_DIR/view_mysql_table.py
