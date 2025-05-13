@@ -91,6 +91,7 @@ def post(self):
     return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
 
+
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
