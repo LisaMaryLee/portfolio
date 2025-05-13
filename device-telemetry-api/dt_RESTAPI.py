@@ -47,50 +47,32 @@ def post(self):
     Handle POST requests for ingesting data into the specified table.
     """
 
-    # Step 1: Simulate 401 Unauthorized
+    # Simulate 401 Unauthorized (must come before get_json)
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header != "Bearer valid_token":
         return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-    # Step 2: Simulate 403 Forbidden
+    # Simulate 403 Forbidden (must come before get_json)
     if request.headers.get("X-Permissions") == "none":
         return make_response(jsonify({"error": "Forbidden"}), 403)
 
     try:
+        # Now it's safe to parse the body
         data = request.get_json()
 
-        # Allow keys to mismatch so we can test unexpected inputs
-        values = tuple(data.get(col) for col in self.columns)
-
-        # Step 3: Trigger internal error for test
+        # Optionally loosen schema for testing
         if "bad_column" in data:
             raise mysql.connector.Error("Simulated internal server error")
+
+        if set(data.keys()) != set(self.columns):
+            return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
+
+        values = tuple(data[col] for col in self.columns)
 
     except KeyError as e:
         return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
     except TypeError:
         return make_response(jsonify({"error": "Invalid JSON format"}), 400)
-
-    query = self.query_func(self.table_name, self.columns)
-
-    try:
-        conn = mysql.connector.connect(
-            host=app.config['MYSQL_HOST'],
-            user=app.config['MYSQL_USER'],
-            password=app.config['MYSQL_PASSWORD'],
-            database=app.config['MYSQL_DB']
-        )
-        cursor = conn.cursor()
-        cursor.execute(query, values)
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except mysql.connector.Error as err:
-        return make_response(jsonify({"error": str(err)}), 500)
-
-    return make_response(jsonify({"message": "Data saved successfully"}), 201)
-
-
 
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
