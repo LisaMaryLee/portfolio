@@ -94,9 +94,4 @@ echo ""
 echo "🔎 Launching view_mysql_table.py to inspect the database..."
 $PYTHON_BIN $APP_DIR/view_mysql_table.py
 
-
-echo ""
-echo "🌐 Starting lightweight HTTP server on port 8080 to serve HTML output..."
-cd $APP_DIR
-nohup $PYTHON_BIN -m http.server 8080 > http_server.log 2>&1 &
-echo "📂 Visit http://$(hostname -I | awk '{print $1}'):8080/output_<table>.html to view results."
+echo "🔎 UI to view the live database available at: http://${INTERNAL_IP}:5000/viewer"
