@@ -18,7 +18,8 @@ api = Api(
 app.config.from_object(Config)
 
 # Register namespace
-ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
+ns = api.namespace('', description='Device Telemetry Ingest API')
+
 
 # Register models with the namespace
 for table_name, model in models.items():
