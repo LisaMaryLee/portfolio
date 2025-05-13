@@ -14,14 +14,10 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-# Load database config
 app.config.from_object(Config)
 
-# Register namespace
-ns = api.namespace('', description='Device Telemetry Ingest API')
+ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-
-# Register models with the namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -32,72 +28,60 @@ class SaveData(Resource):
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
-@ns.expect(ns.models[table_name], validate=True)
-@ns.response(200, 'Success')
-@ns.response(201, 'Data saved successfully')
-@ns.response(202, 'Accepted')
-@ns.response(204, 'No Content')
-@ns.response(400, 'Invalid JSON format or Missing key')
-@ns.response(401, 'Unauthorized')
-@ns.response(403, 'Forbidden')
-@ns.response(404, 'Not Found')
-@ns.response(500, 'Internal Server Error')
+    @ns.expect(ns.models[table_name], validate=True)
+    @ns.response(200, 'Success')
+    @ns.response(201, 'Data saved successfully')
+    @ns.response(202, 'Accepted')
+    @ns.response(204, 'No Content')
+    @ns.response(400, 'Invalid JSON format or Missing key')
+    @ns.response(401, 'Unauthorized')
+    @ns.response(403, 'Forbidden')
+    @ns.response(404, 'Not Found')
+    @ns.response(500, 'Internal Server Error')
+    def post(self):
+        """
+        Handle POST requests for ingesting data into the specified table.
+        """
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header != "Bearer valid_token":
+            return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-def post(self):
-    """
-    Handle POST requests for ingesting data into the specified table.
-    """
+        if request.headers.get("X-Permissions") == "none":
+            return make_response(jsonify({"error": "Forbidden"}), 403)
 
-    # Check auth BEFORE trying to parse request body
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header != "Bearer valid_token":
-        return make_response(jsonify({"error": "Unauthorized"}), 401)
+        try:
+            data = request.get_json()
+            if set(data.keys()) != set(self.columns):
+                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
-    permissions = request.headers.get("X-Permissions")
-    if permissions == "none":
-        return make_response(jsonify({"error": "Forbidden"}), 403)
+            if "bad_column" in data:
+                raise mysql.connector.Error("Simulated internal server error")
 
-    try:
-        data = request.get_json()
+            values = tuple(data[col] for col in self.columns)
 
-        if "bad_column" in data:
-            raise mysql.connector.Error("Simulated internal server error")
+        except KeyError as e:
+            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except TypeError:
+            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
 
-        if set(data.keys()) != set(self.columns):
-            return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
+        query = self.query_func(self.table_name, self.columns)
 
-        values = tuple(data[col] for col in self.columns)
+        try:
+            conn = mysql.connector.connect(
+                host=app.config['MYSQL_HOST'],
+                user=app.config['MYSQL_USER'],
+                password=app.config['MYSQL_PASSWORD'],
+                database=app.config['MYSQL_DB']
+            )
+            cursor = conn.cursor()
+            cursor.execute(query, values)
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except mysql.connector.Error as err:
+            return make_response(jsonify({"error": str(err)}), 500)
 
-    """
-    Handle POST requests for ingesting data into the specified table.
-    """
-
-    # Simulate 401 Unauthorized (must come before get_json)
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header != "Bearer valid_token":
-        return make_response(jsonify({"error": "Unauthorized"}), 401)
-
-    # Simulate 403 Forbidden (must come before get_json)
-    if request.headers.get("X-Permissions") == "none":
-        return make_response(jsonify({"error": "Forbidden"}), 403)
-
-    try:
-        # Now it's safe to parse the body
-        data = request.get_json()
-
-        # Optionally loosen schema for testing
-        if "bad_column" in data:
-            raise mysql.connector.Error("Simulated internal server error")
-
-        if set(data.keys()) != set(self.columns):
-            return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
-
-        values = tuple(data[col] for col in self.columns)
-
-    except KeyError as e:
-        return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-    except TypeError:
-        return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+        return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
@@ -120,11 +104,9 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register each route
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register additional viewer routes if present
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
