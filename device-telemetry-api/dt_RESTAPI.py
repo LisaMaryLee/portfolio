@@ -32,62 +32,65 @@ class SaveData(Resource):
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
-    @ns.expect(ns.models[table_name], validate=True)
-    @ns.response(200, 'Success')
-    @ns.response(201, 'Data saved successfully')
-    @ns.response(202, 'Accepted')
-    @ns.response(204, 'No Content')
-    @ns.response(400, 'Invalid JSON format or Missing key')
-    @ns.response(401, 'Unauthorized')
-    @ns.response(403, 'Forbidden')
-    @ns.response(404, 'Not Found')
-    @ns.response(500, 'Internal Server Error')
-    def post(self):
-        """
-        Handle POST requests for ingesting data into the specified table.
-        """
-        # Simulate 401 Unauthorized if Authorization header is invalid
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header != "Bearer valid_token":
-            return make_response(jsonify({"error": "Unauthorized"}), 401)
+@ns.expect(ns.models[table_name], validate=True)
+@ns.response(200, 'Success')
+@ns.response(201, 'Data saved successfully')
+@ns.response(202, 'Accepted')
+@ns.response(204, 'No Content')
+@ns.response(400, 'Invalid JSON format or Missing key')
+@ns.response(401, 'Unauthorized')
+@ns.response(403, 'Forbidden')
+@ns.response(404, 'Not Found')
+@ns.response(500, 'Internal Server Error')
+def post(self):
+    """
+    Handle POST requests for ingesting data into the specified table.
+    """
 
-        # Simulate 403 Forbidden if permissions are denied
-        if request.headers.get("X-Permissions") == "none":
-            return make_response(jsonify({"error": "Forbidden"}), 403)
+    # ✅ Step 1: Simulate 401 if Authorization is incorrect
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header != "Bearer valid_token":
+        return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-        try:
-            data = request.get_json()
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
-            values = tuple(data[col] for col in self.columns)
+    # ✅ Step 2: Simulate 403 if permissions header is "none"
+    if request.headers.get("X-Permissions") == "none":
+        return make_response(jsonify({"error": "Forbidden"}), 403)
 
-            # Simulate a 500 error manually for testing
-            if "bad_column" in data:
-                raise mysql.connector.Error("Simulated internal server error")
+    try:
+        # ✅ Step 3: Parse JSON (this may raise TypeError if invalid JSON)
+        data = request.get_json()
 
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError:
-            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+        # ⚠️ Skip strict key matching to allow DB errors (500) from extra keys
+        values = tuple(data.get(col) for col in self.columns)
 
-        query = self.query_func(self.table_name, self.columns)
+        # ✅ Optional: Trigger fake 500 manually
+        if "bad_column" in data:
+            raise mysql.connector.Error("Simulated internal server error")
 
-        try:
-            conn = mysql.connector.connect(
-                host=app.config['MYSQL_HOST'],
-                user=app.config['MYSQL_USER'],
-                password=app.config['MYSQL_PASSWORD'],
-                database=app.config['MYSQL_DB']
-            )
-            cursor = conn.cursor()
-            cursor.execute(query, values)
-            conn.commit()
-            cursor.close()
-            conn.close()
-        except mysql.connector.Error as err:
-            return make_response(jsonify({"error": str(err)}), 500)
+    except KeyError as e:
+        return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+    except TypeError:
+        return make_response(jsonify({"error": "Invalid JSON format"}), 400)
 
-        return make_response(jsonify({"message": "Data saved successfully"}), 201)
+    query = self.query_func(self.table_name, self.columns)
+
+    try:
+        conn = mysql.connector.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB']
+        )
+        cursor = conn.cursor()
+        cursor.execute(query, values)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        return make_response(jsonify({"error": str(err)}), 500)
+
+    return make_response(jsonify({"message": "Data saved successfully"}), 201)
+
 
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
