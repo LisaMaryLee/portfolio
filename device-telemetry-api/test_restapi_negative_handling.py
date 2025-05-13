@@ -21,11 +21,8 @@ summary = {}
 
 def print_result(table, test_name, expected, actual):
     key = f"{table}:{test_name}"
-    if expected == actual:
-        status = "✅ PASS"
-    else:
-        status = "❌ FAIL"
-    print(f"{status} | {test_name:<30} | Expected: {expected} | Got: {actual} [{table}]")
+    status = "✅ PASS" if expected == actual else "❌ FAIL"
+    print(f"{status} | {test_name:<30} | Expected: {expected}, Got: {actual} [{table}]")
     summary.setdefault(table, []).append((status, test_name, expected, actual))
 
 def run_negative_tests():
@@ -56,12 +53,10 @@ def run_negative_tests():
         r = requests.post(url, json={}, headers={"X-Permissions": "none"})
         print_result(table, "403 Forbidden (mocked)", 403, r.status_code)
 
-        # 500: Internal (simulate by inserting invalid column)
+        # 500: Internal error simulation — inject a bad column
         bad_data = {**{k: "fake" for k in model.keys()}, "bad_column": "oops"}
         r = requests.post(url, json=bad_data)
         print_result(table, "500 Internal error", 500, r.status_code)
-
-        print("-" * 70)
 
     # 404: Not Found
     table = "Invalid Endpoint"
