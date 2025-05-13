@@ -47,23 +47,22 @@ def post(self):
     Handle POST requests for ingesting data into the specified table.
     """
 
-    # ✅ Step 1: Simulate 401 if Authorization is incorrect
+    # Step 1: Simulate 401 Unauthorized
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header != "Bearer valid_token":
         return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-    # ✅ Step 2: Simulate 403 if permissions header is "none"
+    # Step 2: Simulate 403 Forbidden
     if request.headers.get("X-Permissions") == "none":
         return make_response(jsonify({"error": "Forbidden"}), 403)
 
     try:
-        # ✅ Step 3: Parse JSON (this may raise TypeError if invalid JSON)
         data = request.get_json()
 
-        # ⚠️ Skip strict key matching to allow DB errors (500) from extra keys
+        # Allow keys to mismatch so we can test unexpected inputs
         values = tuple(data.get(col) for col in self.columns)
 
-        # ✅ Optional: Trigger fake 500 manually
+        # Step 3: Trigger internal error for test
         if "bad_column" in data:
             raise mysql.connector.Error("Simulated internal server error")
 
