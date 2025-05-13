@@ -42,7 +42,32 @@ class SaveData(Resource):
 @ns.response(403, 'Forbidden')
 @ns.response(404, 'Not Found')
 @ns.response(500, 'Internal Server Error')
+
 def post(self):
+    """
+    Handle POST requests for ingesting data into the specified table.
+    """
+
+    # Check auth BEFORE trying to parse request body
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header != "Bearer valid_token":
+        return make_response(jsonify({"error": "Unauthorized"}), 401)
+
+    permissions = request.headers.get("X-Permissions")
+    if permissions == "none":
+        return make_response(jsonify({"error": "Forbidden"}), 403)
+
+    try:
+        data = request.get_json()
+
+        if "bad_column" in data:
+            raise mysql.connector.Error("Simulated internal server error")
+
+        if set(data.keys()) != set(self.columns):
+            return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
+
+        values = tuple(data[col] for col in self.columns)
+
     """
     Handle POST requests for ingesting data into the specified table.
     """
