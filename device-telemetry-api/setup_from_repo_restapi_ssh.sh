@@ -68,7 +68,7 @@ source venv/bin/activate
 # Install all required Python libraries
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install flask flask-restx mysql-connector-python faker requests tabulate
+pip install flask flask-restx mysql-connector-python faker requests tabulate flask-cors 
 
 # Copy source code into the working directory
 echo "📄 Copying Flask app and test/viewer scripts..."
