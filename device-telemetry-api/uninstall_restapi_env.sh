@@ -18,6 +18,12 @@ sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql
 sudo apt autoremove -y
 sudo apt autoclean
 
+echo "🧹 Removing REST API related UFW firewall rules..."
+sudo ufw delete allow 5000/tcp || true
+sudo ufw delete allow 8080/tcp || true
+
+echo "✅ All specified firewall rules removed."
+
 echo "✅ Uninstall complete."
 echo "Rebooting Now!"
-sudo reboot /y
+# sudo reboot /y

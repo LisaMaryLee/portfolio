@@ -6,13 +6,13 @@ from table_definitions import columns, table_config, models  # Import columns, t
 from sql_queries import get_insert_query, get_insert_or_replace_query  # Import the SQL query functions
 
 app = Flask(__name__)
-api = Api(app, version='1.0', title='Product Usage REST API', description='A RESTful API for anonymized product usage')
+api = Api(app, version='1.0', title='Stack REST API', description='A RESTful API for anonymized product data')
 
 # Load MySQL configurations from the Config class
 app.config.from_object(Config)
 
 # Define the API namespace without prefix
-ns = api.namespace('', description='Servostack operations')
+ns = api.namespace('', description='Stack operations')
 
 # Register models with the API namespace
 for table_name, model in models.items():
@@ -91,5 +91,11 @@ for table_name in columns.keys():
 # Add the namespace to the API
 api.add_namespace(ns)
 
+
+# --- Viewer Route Integration ---
+from viewer_route import register_viewer_routes
+register_viewer_routes(app)
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+

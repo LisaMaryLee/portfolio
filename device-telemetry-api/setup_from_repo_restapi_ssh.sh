@@ -78,6 +78,7 @@ sudo systemctl restart stack_restapi.service
 echo "🔐 Configuring firewall to allow API traffic..."
 sudo ufw allow OpenSSH
 sudo ufw allow 5000/tcp
+sudo ufw allow 8080/tcp
 sudo ufw --force enable
 
 INTERNAL_IP=$(hostname -I | awk '{print $1}')
@@ -92,3 +93,10 @@ $PYTHON_BIN $APP_DIR/test_dynamic_api_load.py 10
 echo ""
 echo "🔎 Launching view_mysql_table.py to inspect the database..."
 $PYTHON_BIN $APP_DIR/view_mysql_table.py
+
+
+echo ""
+echo "🌐 Starting lightweight HTTP server on port 8080 to serve HTML output..."
+cd $APP_DIR
+nohup $PYTHON_BIN -m http.server 8080 > http_server.log 2>&1 &
+echo "📂 Visit http://$(hostname -I | awk '{print $1}'):8080/output_<table>.html to view results."
