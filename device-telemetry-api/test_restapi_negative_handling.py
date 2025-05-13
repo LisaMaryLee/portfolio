@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 """
-Extended test script for validating REST API error handling on all endpoints.
+Test script for validating REST API negative scenarios.
+
 Covers:
-- 400: Invalid JSON or missing fields
-- 401: Unauthorized (mocked)
-- 403: Forbidden (mocked)
+- 400: Missing required fields, wrong types, malformed JSON
+- 401: Unauthorized (simulated)
+- 403: Forbidden (simulated)
 - 404: Not Found (invalid endpoint)
-- 500: Internal Server Error (simulate bad query)
+- 500: Internal Server Error (simulated bad input)
 """
 
 import requests
@@ -16,48 +17,64 @@ from table_definitions import models
 from config import Config
 
 BASE_URL = f"http://{Config.MYSQL_HOST}:5000"
+summary = {}
+
+def print_result(table, test_name, expected, actual):
+    key = f"{table}:{test_name}"
+    if expected == actual:
+        status = "✅ PASS"
+    else:
+        status = "❌ FAIL"
+    print(f"{status} | {test_name:<30} | Expected: {expected} | Got: {actual} [{table}]")
+    summary.setdefault(table, []).append((status, test_name, expected, actual))
 
 def run_negative_tests():
+    print("🔍 Running negative test coverage...\n")
     for table, model in models.items():
         print(f"🧪 Testing endpoint: /{table}")
         url = f"{BASE_URL}/{table}"
 
-        # 400: Missing required field
+        # 400: Missing key
         partial_data = {key: "dummy" for key in list(model.keys())[1:]}
         r = requests.post(url, json=partial_data)
-        print(f"400 Missing key: {r.status_code} {r.reason}")
+        print_result(table, "400 Missing key", 400, r.status_code)
 
-        # 400: Wrong data types
-        wrong_data = {key: 12345 for key in model.keys()}
+        # 400: Wrong type
+        wrong_data = {key: 123456 for key in model.keys()}
         r = requests.post(url, json=wrong_data)
-        print(f"400 Wrong type: {r.status_code} {r.reason}")
+        print_result(table, "400 Wrong type", 400, r.status_code)
 
-        # 400: Invalid JSON
-        r = requests.post(url, data="not json", headers={"Content-Type": "application/json"})
-        print(f"400 Malformed JSON: {r.status_code} {r.reason}")
+        # 400: Malformed JSON
+        r = requests.post(url, data="not-json", headers={"Content-Type": "application/json"})
+        print_result(table, "400 Malformed JSON", 400, r.status_code)
 
-        # 401: Unauthorized (simulate with header, though not enforced)
-        r = requests.post(url, json={}, headers={"Authorization": "InvalidToken"})
-        print(f"401 Unauthorized (mocked): {r.status_code} {r.reason}")
+        # 401: Unauthorized (mocked)
+        r = requests.post(url, json={}, headers={"Authorization": "BadToken"})
+        print_result(table, "401 Unauthorized (mocked)", 401, r.status_code)
 
-        # 403: Forbidden (simulate with invalid permissions header)
+        # 403: Forbidden (mocked)
         r = requests.post(url, json={}, headers={"X-Permissions": "none"})
-        print(f"403 Forbidden (mocked): {r.status_code} {r.reason}")
+        print_result(table, "403 Forbidden (mocked)", 403, r.status_code)
 
-        print("-" * 60)
-
-    # 404: Invalid endpoint
-    r = requests.post(f"{BASE_URL}/nonexistent_table", json={})
-    print(f"404 Not Found: {r.status_code} {r.reason}")
-
-    # 500: Internal error simulation — bad SQL or missing DB fields
-    for table, model in models.items():
-        url = f"{BASE_URL}/{table}"
-        # Inject unexpected key to trigger DB mismatch
-        bad_data = {**{key: "value" for key in model.keys()}, "bad_column": "crash"}
+        # 500: Internal (simulate by inserting invalid column)
+        bad_data = {**{k: "fake" for k in model.keys()}, "bad_column": "oops"}
         r = requests.post(url, json=bad_data)
-        print(f"500 Internal (bad column): {r.status_code} {r.reason}")
-        print("-" * 60)
+        print_result(table, "500 Internal error", 500, r.status_code)
+
+        print("-" * 70)
+
+    # 404: Not Found
+    table = "Invalid Endpoint"
+    r = requests.post(f"{BASE_URL}/nonexistent_table", json={})
+    print_result(table, "404 Not Found", 404, r.status_code)
+
+def print_summary():
+    print("\n📊 SUMMARY:")
+    for table, results in summary.items():
+        print(f"\nTable: {table}")
+        for status, test_name, expected, actual in results:
+            print(f"  - {status} | {test_name:<30} | Expected {expected}, Got {actual}")
 
 if __name__ == "__main__":
     run_negative_tests()
+    print_summary()
