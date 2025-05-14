@@ -102,6 +102,7 @@ def create_resource(table_name):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
+        @ns.expect(ns.models[table_name], validate=False)
         @ns.response(200, 'Success')
         @ns.response(201, 'Data saved successfully')
         @ns.response(202, 'Accepted')
