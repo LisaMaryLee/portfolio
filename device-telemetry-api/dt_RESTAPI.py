@@ -69,6 +69,10 @@ class SaveData(Resource):
         except Exception as e:
             return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 500)
 
+        # 500: Simulate server error BEFORE key mismatch check
+        if "bad_column" in data:
+            raise mysql.connector.Error("Simulated internal server error")
+
         # 400: Check for missing or extra keys
         if set(data.keys()) != set(self.columns):
             return make_response(jsonify({"error": "Payload keys mismatch"}), 400)
@@ -82,10 +86,6 @@ class SaveData(Resource):
             elif isinstance(expected_field, fields.Integer):
                 if not isinstance(value, int):
                     return make_response(jsonify({"error": f"Wrong type for field '{field}', expected integer"}), 400)
-
-        # 500: Simulate server error
-        if "bad_column" in data:
-            raise mysql.connector.Error("Simulated internal server error")
 
         values = tuple(data[col] for col in self.columns)
         query = self.query_func(self.table_name, self.columns)
