@@ -39,7 +39,8 @@ class SaveData(Resource):
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
     @ns.response(500, 'Internal Server Error')
-    def post(self):
+    
+  def post(self):
     """
     Handle POST requests for ingesting data into the specified table.
     """
