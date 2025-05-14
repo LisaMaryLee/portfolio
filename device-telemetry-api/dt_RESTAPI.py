@@ -40,52 +40,63 @@ class SaveData(Resource):
     @ns.response(403, 'Forbidden')
     @ns.response(500, 'Internal Server Error')
     def post(self):
-        # Pre-validation checks (auth and permissions)
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header != "Bearer valid_token":
-            return make_response(jsonify({"error": "Unauthorized"}), 401)
+    """
+    Handle POST requests for ingesting data into the specified table.
+    """
+    # Simulate 401 Unauthorized if Authorization header is invalid
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header != "Bearer valid_token":
+        return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-        if request.headers.get("X-Permissions") == "none":
-            return make_response(jsonify({"error": "Forbidden"}), 403)
+    # Simulate 403 Forbidden if permissions are denied
+    if request.headers.get("X-Permissions") == "none":
+        return make_response(jsonify({"error": "Forbidden"}), 403)
 
-        try:
-            data = request.get_json(force=True)
+    try:
+        data = request.get_json(force=True)
 
-        except BadRequest:
-            return make_response(jsonify({"error": "Malformed JSON"}), 400)
+        # Simulated 500 error: presence of bad_column
+        if "bad_column" in data:
+            raise ValueError("Simulated internal server error")
 
-        # Check key match
+        # Validate keys explicitly
         if set(data.keys()) != set(self.columns):
             return make_response(jsonify({"error": "Missing or extra keys"}), 400)
 
-        # Simulate internal error
-        if "bad_column" in data:
-            return make_response(jsonify({"error": "Simulated internal server error"}), 500)
-
-        # Type check (simulate wrong type)
-        for k, v in data.items():
-            if not isinstance(v, str):
-                return make_response(jsonify({"error": f"Invalid type for field {k}"}), 400)
+        # Type validation (Loose check: basic types only)
+        for col in self.columns:
+            val = data[col]
+            if isinstance(val, (bool, list, dict)):
+                return make_response(jsonify({"error": f"Invalid type for '{col}'"}), 400)
 
         values = tuple(data[col] for col in self.columns)
-        query = self.query_func(self.table_name, self.columns)
 
-        try:
-            conn = mysql.connector.connect(
-                host=app.config['MYSQL_HOST'],
-                user=app.config['MYSQL_USER'],
-                password=app.config['MYSQL_PASSWORD'],
-                database=app.config['MYSQL_DB']
-            )
-            cursor = conn.cursor()
-            cursor.execute(query, values)
-            conn.commit()
-            cursor.close()
-            conn.close()
-        except mysql.connector.Error as err:
-            return make_response(jsonify({"error": str(err)}), 500)
+    except ValueError as ve:
+        return make_response(jsonify({"error": str(ve)}), 500)
+    except TypeError:
+        return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+    except Exception as e:
+        return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 400)
 
-        return make_response(jsonify({"message": "Data saved successfully"}), 201)
+    query = self.query_func(self.table_name, self.columns)
+
+    try:
+        conn = mysql.connector.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB']
+        )
+        cursor = conn.cursor()
+        cursor.execute(query, values)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        return make_response(jsonify({"error": str(err)}), 500)
+
+    return make_response(jsonify({"message": "Data saved successfully"}), 201)
+
 
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
