@@ -6,6 +6,7 @@ from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
 
+# Initialize Flask app and RESTX API
 app = Flask(__name__)
 CORS(app)
 
@@ -17,8 +18,11 @@ api = Api(
 )
 
 app.config.from_object(Config)
+
+# Define API namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
+# Register models with namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -29,7 +33,7 @@ class SaveData(Resource):
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
-    @ns.expect(ns.models[table_name], validate=True)
+    @ns.expect(ns.models[table_name])
     @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
     @ns.response(202, 'Accepted')
@@ -43,28 +47,33 @@ class SaveData(Resource):
         """
         Handle POST requests for ingesting data into the specified table.
         """
-        # Simulated authorization handling
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header != "Bearer valid_token":
-            return make_response(jsonify({"error": "Unauthorized"}), 401)
-
-        if request.headers.get("X-Permissions") == "none":
-            return make_response(jsonify({"error": "Forbidden"}), 403)
-
         try:
+            # 401: Unauthorized
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header != "Bearer valid_token":
+                return make_response(jsonify({"error": "Unauthorized"}), 401)
+
+            # 403: Forbidden
+            if request.headers.get("X-Permissions") == "none":
+                return make_response(jsonify({"error": "Forbidden"}), 403)
+
+            # Parse JSON
             data = request.get_json(force=True)
 
             if not isinstance(data, dict):
                 raise TypeError("Invalid JSON format")
 
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({
-                    "error": f"Unexpected keys in payload. Expected keys: {self.columns}"
-                }), 400)
-
+            # 500: Triggered simulation
             if "bad_column" in data:
                 raise mysql.connector.Error("Simulated internal server error")
 
+            # 400: Key validation
+            if set(data.keys()) != set(self.columns):
+                return make_response(jsonify({
+                    "error": f"Unexpected or missing keys. Expected: {self.columns}"
+                }), 400)
+
+            # Ordered tuple of values
             values = tuple(data[col] for col in self.columns)
 
         except KeyError as e:
@@ -95,12 +104,13 @@ class SaveData(Resource):
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
+# Factory for table-specific endpoints
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
-        @ns.expect(ns.models[table_name], validate=True)
+        @ns.expect(ns.models[table_name])
         @ns.response(200, 'Success')
         @ns.response(202, 'Accepted')
         @ns.response(204, 'No Content')
@@ -116,9 +126,11 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
+# Register all dynamic endpoints
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
+# Optional viewer route
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
