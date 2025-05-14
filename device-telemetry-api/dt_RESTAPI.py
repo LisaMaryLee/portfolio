@@ -5,7 +5,6 @@ import mysql.connector
 from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
-from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 api = Api(
@@ -16,12 +15,9 @@ api = Api(
 )
 
 app.config.from_object(Config)
-CORS(app)
-
-# Define namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register all models with the namespace
+# Register models with the API namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -32,15 +28,20 @@ class SaveData(Resource):
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
-    @ns.expect(ns.models[table_name])
+    @ns.expect(ns.models[table_name], validate=True)
     @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
-    @ns.response(400, 'Invalid JSON format or Missing key or Wrong type')
+    @ns.response(202, 'Accepted')
+    @ns.response(204, 'No Content')
+    @ns.response(400, 'Invalid JSON format or Missing key')
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
     @ns.response(404, 'Not Found')
     @ns.response(500, 'Internal Server Error')
     def post(self):
+        """
+        Handle POST requests to ingest telemetry data into a specific table.
+        """
         # Simulate 401 Unauthorized
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header != "Bearer valid_token":
@@ -50,37 +51,36 @@ class SaveData(Resource):
         if request.headers.get("X-Permissions") == "none":
             return make_response(jsonify({"error": "Forbidden"}), 403)
 
-        # Try parsing the JSON safely
         try:
             data = request.get_json(force=True)
-        except BadRequest:
-            return make_response(jsonify({"error": "Malformed JSON"}), 400)
 
-        # Check for missing keys
-        if not all(k in data for k in self.columns):
-            return make_response(jsonify({"error": "Missing key(s) in JSON payload"}), 400)
+            # Simulate 500 Internal Error
+            if "bad_column" in data:
+                raise mysql.connector.Error("Simulated internal server error")
 
-        # Check for type mismatch manually
-        model_schema = ns.models[self.table_name]
-        for field_name, field_type in model_schema.items():
-            if field_name not in data:
-                continue
-            expected_type = field_type.__class__.__name__
-            value = data[field_name]
-            if expected_type == "Integer" and not isinstance(value, int):
-                return make_response(jsonify({"error": f"Invalid type for '{field_name}', expected integer"}), 400)
-            if expected_type == "String" and not isinstance(value, str):
-                return make_response(jsonify({"error": f"Invalid type for '{field_name}', expected string"}), 400)
+            # Reject if unexpected keys are present
+            if not all(k in self.columns for k in data.keys()):
+                return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
-        # Simulate 500 error
-        if "bad_column" in data:
-            return make_response(jsonify({"error": "Simulated internal server error"}), 500)
+            # Reject if any value is the wrong type (simple type-check)
+            for key in self.columns:
+                if not isinstance(data[key], (str, int, float, bool, type(None))):
+                    return make_response(jsonify({"error": f"Invalid type for key '{key}'"}), 400)
 
-        # Prepare values
-        values = tuple(data[col] for col in self.columns)
+            # Build values tuple
+            values = tuple(data[col] for col in self.columns)
 
-        # Execute insert
+        except KeyError as e:
+            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except TypeError:
+            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+        except mysql.connector.Error as e:
+            return make_response(jsonify({"error": f"Database error: {str(e)}"}), 500)
+        except Exception as e:
+            return make_response(jsonify({"error": f"Unhandled error: {str(e)}"}), 500)
+
         query = self.query_func(self.table_name, self.columns)
+
         try:
             conn = mysql.connector.connect(
                 host=app.config['MYSQL_HOST'],
@@ -98,24 +98,32 @@ class SaveData(Resource):
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
-# Create table-specific subclasses
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
-        @ns.expect(ns.models[table_name])
+        @ns.expect(ns.models[table_name], validate=True)
+        @ns.response(200, 'Success')
+        @ns.response(202, 'Accepted')
+        @ns.response(204, 'No Content')
+        @ns.response(400, 'Invalid JSON format or Missing key')
+        @ns.response(401, 'Unauthorized')
+        @ns.response(403, 'Forbidden')
+        @ns.response(404, 'Not Found')
+        @ns.response(500, 'Internal Server Error')
+        @ns.response(201, 'Data saved successfully')
         def post(self):
             return super().post()
 
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register endpoints dynamically
+# Register endpoint per table
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register viewer routes if needed
+# Register viewer route
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
