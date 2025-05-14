@@ -20,7 +20,6 @@ BASE_URL = f"http://{Config.MYSQL_HOST}:5000"
 summary = {}
 
 def print_result(table, test_name, expected, actual):
-    key = f"{table}:{test_name}"
     status = "✅ PASS" if expected == actual else "❌ FAIL"
     print(f"{status} | {test_name:<30} | Expected: {expected}, Got: {actual} [{table}]")
     summary.setdefault(table, []).append((status, test_name, expected, actual))
@@ -37,12 +36,12 @@ def run_negative_tests():
         print_result(table, "400 Missing key", 400, r.status_code)
 
         # 400: Wrong type
-        wrong_data = {key: 123456 for key in model.keys()}
+        wrong_data = {key: True for key in model.keys()}
         r = requests.post(url, json=wrong_data)
         print_result(table, "400 Wrong type", 400, r.status_code)
 
         # 400: Malformed JSON
-        r = requests.post(url, data="not-json", headers={"Content-Type": "application/json"})
+        r = requests.post(url, data="{invalid json", headers={"Content-Type": "application/json"})
         print_result(table, "400 Malformed JSON", 400, r.status_code)
 
         # 401: Unauthorized (mocked)
@@ -54,7 +53,7 @@ def run_negative_tests():
         print_result(table, "403 Forbidden (mocked)", 403, r.status_code)
 
         # 500: Internal error simulation — inject a bad column
-        bad_data = {**{k: "fake" for k in model.keys()}, "bad_column": "oops"}
+        bad_data = {**{k: "test" for k in model.keys()}, "bad_column": "trigger"}
         r = requests.post(url, json=bad_data)
         print_result(table, "500 Internal error", 500, r.status_code)
 
