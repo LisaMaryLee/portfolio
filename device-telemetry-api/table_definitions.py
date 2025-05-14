@@ -77,7 +77,7 @@ ss_harddriveinventory_model = {
 table_config = {
     'ss_general': 'insert_or_replace',
     'ss_harddriveinventory': 'insert_or_replace',
-    'ss_cartridge_information': 'insert',
+    'ss_cartridge_information': 'insert_or_replace',
     'ss_cartridge_partition': 'insert'
 }
 

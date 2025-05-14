@@ -41,6 +41,7 @@ class SaveData(Resource):
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
     @ns.response(404, 'Not Found')
+    @ns.response(409, 'Conflict: Duplicate entry')
     @ns.response(500, 'Internal Server Error')
     def post(self):
         """
@@ -103,6 +104,8 @@ class SaveData(Resource):
             cursor.close()
             conn.close()
         except mysql.connector.Error as err:
+            if "Duplicate entry" in str(err):
+                return make_response(jsonify({"error": f"Conflict: {str(err)}"}), 409)
             return make_response(jsonify({"error": str(err)}), 500)
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
@@ -121,6 +124,7 @@ def create_resource(table_name):
         @ns.response(401, 'Unauthorized')
         @ns.response(403, 'Forbidden')
         @ns.response(404, 'Not Found')
+        @ns.response(409, 'Conflict: Duplicate entry')
         @ns.response(500, 'Internal Server Error')
         def post(self):
             return super().post()
