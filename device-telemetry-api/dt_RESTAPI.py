@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
 import mysql.connector
+from werkzeug.exceptions import BadRequest
 from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
@@ -61,23 +62,32 @@ class SaveData(Resource):
             if not isinstance(data, dict):
                 raise TypeError("Payload is not a valid JSON object")
 
-            # 400: Check for missing or extra keys
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({"error": "Payload keys mismatch"}), 400)
-
-            values = tuple(data[col] for col in self.columns)
-
-            # 500: Simulate server error
-            if "bad_column" in data:
-                raise mysql.connector.Error("Simulated internal server error")
-
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except BadRequest as e:
+            return make_response(jsonify({"error": f"Malformed JSON: {str(e)}"}), 400)
         except TypeError as e:
             return make_response(jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400)
         except Exception as e:
             return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 500)
 
+        # 400: Check for missing or extra keys
+        if set(data.keys()) != set(self.columns):
+            return make_response(jsonify({"error": "Payload keys mismatch"}), 400)
+
+        # Type check based on Swagger model (basic manual validation)
+        for field, value in data.items():
+            expected_field = ns.models[self.table_name][field]
+            if isinstance(expected_field, fields.String):
+                if not isinstance(value, str):
+                    return make_response(jsonify({"error": f"Wrong type for field '{field}', expected string"}), 400)
+            elif isinstance(expected_field, fields.Integer):
+                if not isinstance(value, int):
+                    return make_response(jsonify({"error": f"Wrong type for field '{field}', expected integer"}), 400)
+
+        # 500: Simulate server error
+        if "bad_column" in data:
+            raise mysql.connector.Error("Simulated internal server error")
+
+        values = tuple(data[col] for col in self.columns)
         query = self.query_func(self.table_name, self.columns)
 
         try:
