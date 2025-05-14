@@ -17,7 +17,7 @@ api = Api(
 app.config.from_object(Config)
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register models with the API namespace
+# Register models for OpenAPI
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -31,20 +31,14 @@ class SaveData(Resource):
     @ns.expect(ns.models[table_name], validate=True)
     @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
-    @ns.response(202, 'Accepted')
-    @ns.response(204, 'No Content')
-    @ns.response(400, 'Invalid JSON format or Missing key')
+    @ns.response(400, 'Invalid request or bad data')
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
     @ns.response(404, 'Not Found')
     @ns.response(500, 'Internal Server Error')
     def post(self):
-        """
-        Handle POST requests to ingest telemetry data into a specific table.
-        """
         # Simulate 401 Unauthorized
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header != "Bearer valid_token":
+        if request.headers.get("Authorization") not in (None, "Bearer valid_token"):
             return make_response(jsonify({"error": "Unauthorized"}), 401)
 
         # Simulate 403 Forbidden
@@ -54,20 +48,20 @@ class SaveData(Resource):
         try:
             data = request.get_json(force=True)
 
-            # Simulate 500 Internal Error
+            # Simulate 500 before key mismatch
             if "bad_column" in data:
                 raise mysql.connector.Error("Simulated internal server error")
 
-            # Reject if unexpected keys are present
-            if not all(k in self.columns for k in data.keys()):
+            # Enforce exact match of keys
+            if set(data.keys()) != set(self.columns):
                 return make_response(jsonify({"error": "Unexpected keys in payload"}), 400)
 
-            # Reject if any value is the wrong type (simple type-check)
+            # Enforce basic type safety (optional: refine for stricter typing)
             for key in self.columns:
-                if not isinstance(data[key], (str, int, float, bool, type(None))):
+                value = data[key]
+                if not isinstance(value, (str, int, float, bool, type(None))):
                     return make_response(jsonify({"error": f"Invalid type for key '{key}'"}), 400)
 
-            # Build values tuple
             values = tuple(data[col] for col in self.columns)
 
         except KeyError as e:
@@ -75,7 +69,7 @@ class SaveData(Resource):
         except TypeError:
             return make_response(jsonify({"error": "Invalid JSON format"}), 400)
         except mysql.connector.Error as e:
-            return make_response(jsonify({"error": f"Database error: {str(e)}"}), 500)
+            return make_response(jsonify({"error": f"Simulated error: {str(e)}"}), 500)
         except Exception as e:
             return make_response(jsonify({"error": f"Unhandled error: {str(e)}"}), 500)
 
@@ -103,27 +97,17 @@ def create_resource(table_name):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
-        @ns.expect(ns.models[table_name], validate=True)
-        @ns.response(200, 'Success')
-        @ns.response(202, 'Accepted')
-        @ns.response(204, 'No Content')
-        @ns.response(400, 'Invalid JSON format or Missing key')
-        @ns.response(401, 'Unauthorized')
-        @ns.response(403, 'Forbidden')
-        @ns.response(404, 'Not Found')
-        @ns.response(500, 'Internal Server Error')
-        @ns.response(201, 'Data saved successfully')
         def post(self):
             return super().post()
 
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register endpoint per table
-for table_name in columns.keys():
+# Register all endpoints
+for table_name in columns:
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register viewer route
+# Viewer route integration (if used)
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
