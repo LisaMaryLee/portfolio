@@ -5,11 +5,9 @@ import mysql.connector
 from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
+from werkzeug.exceptions import BadRequest
 
-# Initialize Flask app and RESTX API
 app = Flask(__name__)
-CORS(app)
-
 api = Api(
     app,
     version='1.0',
@@ -18,11 +16,12 @@ api = Api(
 )
 
 app.config.from_object(Config)
+CORS(app)
 
-# Define API namespace
+# Define namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register models with namespace
+# Register all models with the namespace
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -36,57 +35,52 @@ class SaveData(Resource):
     @ns.expect(ns.models[table_name])
     @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
-    @ns.response(202, 'Accepted')
-    @ns.response(204, 'No Content')
-    @ns.response(400, 'Invalid JSON format or Missing key')
+    @ns.response(400, 'Invalid JSON format or Missing key or Wrong type')
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
     @ns.response(404, 'Not Found')
     @ns.response(500, 'Internal Server Error')
     def post(self):
-        """
-        Handle POST requests for ingesting data into the specified table.
-        """
+        # Simulate 401 Unauthorized
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header != "Bearer valid_token":
+            return make_response(jsonify({"error": "Unauthorized"}), 401)
+
+        # Simulate 403 Forbidden
+        if request.headers.get("X-Permissions") == "none":
+            return make_response(jsonify({"error": "Forbidden"}), 403)
+
+        # Try parsing the JSON safely
         try:
-            # 401: Unauthorized
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header != "Bearer valid_token":
-                return make_response(jsonify({"error": "Unauthorized"}), 401)
-
-            # 403: Forbidden
-            if request.headers.get("X-Permissions") == "none":
-                return make_response(jsonify({"error": "Forbidden"}), 403)
-
-            # Parse JSON
             data = request.get_json(force=True)
+        except BadRequest:
+            return make_response(jsonify({"error": "Malformed JSON"}), 400)
 
-            if not isinstance(data, dict):
-                raise TypeError("Invalid JSON format")
+        # Check for missing keys
+        if not all(k in data for k in self.columns):
+            return make_response(jsonify({"error": "Missing key(s) in JSON payload"}), 400)
 
-            # 500: Triggered simulation
-            if "bad_column" in data:
-                raise mysql.connector.Error("Simulated internal server error")
+        # Check for type mismatch manually
+        model_schema = ns.models[self.table_name]
+        for field_name, field_type in model_schema.items():
+            if field_name not in data:
+                continue
+            expected_type = field_type.__class__.__name__
+            value = data[field_name]
+            if expected_type == "Integer" and not isinstance(value, int):
+                return make_response(jsonify({"error": f"Invalid type for '{field_name}', expected integer"}), 400)
+            if expected_type == "String" and not isinstance(value, str):
+                return make_response(jsonify({"error": f"Invalid type for '{field_name}', expected string"}), 400)
 
-            # 400: Key validation
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({
-                    "error": f"Unexpected or missing keys. Expected: {self.columns}"
-                }), 400)
+        # Simulate 500 error
+        if "bad_column" in data:
+            return make_response(jsonify({"error": "Simulated internal server error"}), 500)
 
-            # Ordered tuple of values
-            values = tuple(data[col] for col in self.columns)
+        # Prepare values
+        values = tuple(data[col] for col in self.columns)
 
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError as e:
-            return make_response(jsonify({"error": str(e)}), 400)
-        except mysql.connector.Error as e:
-            return make_response(jsonify({"error": str(e)}), 500)
-        except Exception as e:
-            return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 500)
-
+        # Execute insert
         query = self.query_func(self.table_name, self.columns)
-
         try:
             conn = mysql.connector.connect(
                 host=app.config['MYSQL_HOST'],
@@ -104,33 +98,24 @@ class SaveData(Resource):
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
-# Factory for table-specific endpoints
+# Create table-specific subclasses
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
         @ns.expect(ns.models[table_name])
-        @ns.response(200, 'Success')
-        @ns.response(202, 'Accepted')
-        @ns.response(204, 'No Content')
-        @ns.response(400, 'Invalid JSON format or Missing key')
-        @ns.response(401, 'Unauthorized')
-        @ns.response(403, 'Forbidden')
-        @ns.response(404, 'Not Found')
-        @ns.response(500, 'Internal Server Error')
-        @ns.response(201, 'Data saved successfully')
         def post(self):
             return super().post()
 
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register all dynamic endpoints
+# Register endpoints dynamically
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Optional viewer route
+# Register viewer routes if needed
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
