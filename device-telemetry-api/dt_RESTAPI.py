@@ -9,6 +9,7 @@ from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
 
 app = Flask(__name__)
+app.config.from_object(Config)
 CORS(app)
 
 api = Api(
@@ -18,12 +19,9 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-app.config.from_object(Config)
-
-# Namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register models with the namespace
+# Register models
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -34,7 +32,6 @@ class SaveData(Resource):
         self.columns = columns[table_name]
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
-    @ns.expect(ns.models[table_name], validate=True)
     @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
     @ns.response(202, 'Accepted')
@@ -48,38 +45,40 @@ class SaveData(Resource):
         """
         Handle POST requests for ingesting data into the specified table.
         """
-        # Simulate 401 Unauthorized
+
+        # Mock 401 Unauthorized
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header != "Bearer valid_token":
             return make_response(jsonify({"error": "Unauthorized"}), 401)
 
-        # Simulate 403 Forbidden
+        # Mock 403 Forbidden
         if request.headers.get("X-Permissions") == "none":
             return make_response(jsonify({"error": "Forbidden"}), 403)
 
         try:
             data = request.get_json(force=True)
 
-            # Check for exact match of keys
-            if set(data.keys()) != set(self.columns):
-                return make_response(jsonify({"error": "Missing or extra keys in payload"}), 400)
+            if not isinstance(data, dict):
+                raise TypeError("Payload is not a valid JSON object")
 
-            # Simulate internal error for testing
+            # 400: Check for missing or extra keys
+            if set(data.keys()) != set(self.columns):
+                return make_response(jsonify({"error": "Payload keys mismatch"}), 400)
+
+            values = tuple(data[col] for col in self.columns)
+
+            # 500: Simulate server error
             if "bad_column" in data:
                 raise mysql.connector.Error("Simulated internal server error")
 
-            # Validate types - rough check: strings only
-            for key, value in data.items():
-                if not isinstance(value, str):
-                    return make_response(jsonify({"error": f"Invalid type for key: {key}"}), 400)
-
-            values = tuple(data[col] for col in self.columns)
-            query = self.query_func(self.table_name, self.columns)
-
-        except TypeError:
-            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
+        except KeyError as e:
+            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
+        except TypeError as e:
+            return make_response(jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400)
         except Exception as e:
-            return make_response(jsonify({"error": str(e)}), 500)
+            return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 500)
+
+        query = self.query_func(self.table_name, self.columns)
 
         try:
             conn = mysql.connector.connect(
@@ -103,7 +102,6 @@ def create_resource(table_name):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
 
-        @ns.expect(ns.models[table_name], validate=True)
         @ns.response(200, 'Success')
         @ns.response(201, 'Data saved successfully')
         @ns.response(202, 'Accepted')
@@ -119,11 +117,11 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register each route dynamically
+# Register resources
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Viewer routes if present
+# Register viewer routes if applicable
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
