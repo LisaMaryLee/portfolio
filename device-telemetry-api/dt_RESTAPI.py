@@ -1,13 +1,16 @@
+#!/usr/bin/env python3
 
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
 import mysql.connector
+from werkzeug.exceptions import BadRequest
 from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
 
 app = Flask(__name__)
+app.config.from_object(Config)
 CORS(app)
 
 api = Api(
@@ -17,12 +20,9 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
-app.config.from_object(Config)
-
-# Define namespace
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Explicitly register all models early
+# Register models to Swagger
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
@@ -34,14 +34,13 @@ class SaveData(Resource):
         self.query_func = get_insert_query if table_config[table_name] == 'insert' else get_insert_or_replace_query
 
     @ns.expect(ns.models[table_name], validate=True)
-    @ns.response(200, 'Success')
     @ns.response(201, 'Data saved successfully')
-    @ns.response(400, 'Invalid JSON format or Missing key')
+    @ns.response(400, 'Bad Request (Malformed JSON, Wrong Type, Missing Field)')
     @ns.response(401, 'Unauthorized')
     @ns.response(403, 'Forbidden')
-    @ns.response(404, 'Not Found')
     @ns.response(500, 'Internal Server Error')
     def post(self):
+        # Pre-validation checks (auth and permissions)
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header != "Bearer valid_token":
             return make_response(jsonify({"error": "Unauthorized"}), 401)
@@ -52,32 +51,23 @@ class SaveData(Resource):
         try:
             data = request.get_json(force=True)
 
-            # Reject if keys mismatch
-            missing_keys = [col for col in self.columns if col not in data]
-            if missing_keys:
-                return make_response(jsonify({"error": f"Missing key(s): {', '.join(missing_keys)}"}), 400)
+        except BadRequest:
+            return make_response(jsonify({"error": "Malformed JSON"}), 400)
 
-            # Simulate server error
-            if "bad_column" in data:
-                raise mysql.connector.Error("Simulated internal server error")
+        # Check key match
+        if set(data.keys()) != set(self.columns):
+            return make_response(jsonify({"error": "Missing or extra keys"}), 400)
 
-            # Type checking
-            for key in self.columns:
-                expected_type = type(ns.models[self.table_name][key]).__name__
-                if isinstance(data[key], dict) or data[key] is None:
-                    continue  # Skip deeper inspection for now
-                if not isinstance(data[key], (str, int, float, bool)):
-                    return make_response(jsonify({"error": f"Wrong type for {key}"}), 400)
+        # Simulate internal error
+        if "bad_column" in data:
+            return make_response(jsonify({"error": "Simulated internal server error"}), 500)
 
-            values = tuple(data[col] for col in self.columns)
+        # Type check (simulate wrong type)
+        for k, v in data.items():
+            if not isinstance(v, str):
+                return make_response(jsonify({"error": f"Invalid type for field {k}"}), 400)
 
-        except KeyError as e:
-            return make_response(jsonify({"error": f"Missing key: {str(e)}"}), 400)
-        except TypeError:
-            return make_response(jsonify({"error": "Invalid JSON format"}), 400)
-        except Exception as e:
-            return make_response(jsonify({"error": str(e)}), 500)
-
+        values = tuple(data[col] for col in self.columns)
         query = self.query_func(self.table_name, self.columns)
 
         try:
@@ -101,19 +91,14 @@ def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
             super().__init__(table_name, *args, **kwargs)
-
-        @ns.expect(ns.models[table_name], validate=True)
-        def post(self):
-            return super().post()
-
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register routes after models are fully attached
+# Register resource endpoints
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Viewer routes if applicable
+# Optional viewer routes
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
