@@ -1,5 +1,6 @@
 from flask_restx import fields
 
+# Dictionary mapping table names to their expected column order for SQL inserts
 columns = {
     'ss_general': [
         'SID', 'ss_software_version', 'model_number', 'time_zone', 'locale',
@@ -20,7 +21,7 @@ columns = {
     ]
 }
 
-# Define the Swagger models for the tables
+# Swagger schema definition for the 'ss_general' telemetry table
 ss_general_model = {
     'SID': fields.String(required=True, description='The unique identifier', example="3659890703846945"),
     'ss_software_version': fields.String(required=True, description='Software version', example="X.2.6"),
@@ -31,6 +32,7 @@ ss_general_model = {
     'dock_qty': fields.Integer(required=True, description='Quantity of docks', example=4)
 }
 
+# Swagger schema for cartridge metadata and usage
 ss_cartridge_information_model = {
     'cartridge_ID': fields.Integer(required=True, description='Cartridge ID', example=321654900),
     'SID': fields.String(required=True, description='The unique identifier', example="3659890703846945"),
@@ -51,6 +53,8 @@ ss_cartridge_information_model = {
     'partition_count': fields.Integer(required=True, description='Number of partitions', example=3),
     'link_speed': fields.String(required=True, description='Link speed', example="6Gbps")
 }
+
+# Swagger schema for cartridge partition information
 ss_cartridge_partition_model = {
     'cartridge_ID': fields.String(required=True, description='Cartridge ID', example=321654900),
     'SID': fields.String(required=True, description='The unique identifier', example="3659890703846945"),
@@ -64,6 +68,7 @@ ss_cartridge_partition_model = {
     'threshold': fields.String(required=True, description='Threshold', example="80%")
 }
 
+# Swagger schema for internal hard drive inventory
 ss_harddriveinventory_model = {
     'SID': fields.String(required=True, description='The unique identifier', example="3659890703846945"),
     'host_ID': fields.String(required=True, description='Host ID', example="1234567890123456"),
@@ -73,19 +78,20 @@ ss_harddriveinventory_model = {
     'DriveType': fields.String(required=True, description='Drive Type', example="hdd")
 }
 
-# Table configurations indicating whether to use insert-only or insert-or-replace
+# Table strategy configuration:
+# - 'insert': allow only new inserts (errors on duplicate keys)
+# - 'insert_or_replace': allow upserts (updates on duplicates)
 table_config = {
     'ss_general': 'insert_or_replace',
     'ss_harddriveinventory': 'insert_or_replace',
     'ss_cartridge_information': 'insert_or_replace',
-    'ss_cartridge_partition': 'insert'
+    'ss_cartridge_partition': 'insert'  # strictly insert-only
 }
 
-# Map table names to their respective Swagger models
+# Dictionary mapping each table to its Swagger model for request validation and documentation
 models = {
     'ss_general': ss_general_model,
     'ss_cartridge_information': ss_cartridge_information_model,
     'ss_cartridge_partition': ss_cartridge_partition_model,
     'ss_harddriveinventory': ss_harddriveinventory_model
 }
-
