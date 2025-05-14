@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+Device Telemetry REST API
+
+This API collects and stores anonymized telemetry data from storage appliances. 
+It supports multiple dynamic endpoints based on table definitions and allows 
+data ingestion with custom runtime validation and error simulation for testing.
+"""
+
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
@@ -9,10 +17,12 @@ from config import Config
 from table_definitions import columns, table_config, models
 from sql_queries import get_insert_query, get_insert_or_replace_query
 
+# Initialize Flask application
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
 
+# Configure Swagger API documentation
 api = Api(
     app,
     version='1.0',
@@ -20,12 +30,14 @@ api = Api(
     description='REST API for collecting and storing anonymized telemetry data from storage appliances.'
 )
 
+# Define a namespace for telemetry-related routes
 ns = api.namespace('telemetry', description='Endpoints for ingesting device telemetry')
 
-# Register models
+# Register Swagger models for each telemetry table
 for table_name, model in models.items():
     ns.models[table_name] = api.model(table_name, model)
 
+# Base class for handling telemetry data ingestion
 class SaveData(Resource):
     def __init__(self, table_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,6 +58,7 @@ class SaveData(Resource):
     def post(self):
         """
         Handle POST requests for ingesting data into the specified table.
+        Validates the request payload, simulates common errors, and inserts data into MySQL.
         """
 
         # Mock 401 Unauthorized
@@ -57,6 +70,7 @@ class SaveData(Resource):
         if request.headers.get("X-Permissions") == "none":
             return make_response(jsonify({"error": "Forbidden"}), 403)
 
+        # Parse and validate JSON input
         try:
             data = request.get_json(force=True)
 
@@ -70,15 +84,15 @@ class SaveData(Resource):
         except Exception as e:
             return make_response(jsonify({"error": f"Unexpected error: {str(e)}"}), 500)
 
-        # 500: Simulate server error BEFORE key mismatch check
+        # Simulate server error for testing
         if "bad_column" in data:
             raise mysql.connector.Error("Simulated internal server error")
 
-        # 400: Check for missing or extra keys
+        # Ensure payload contains exact expected keys
         if set(data.keys()) != set(self.columns):
             return make_response(jsonify({"error": "Payload keys mismatch"}), 400)
 
-        # Type check based on Swagger model (basic manual validation)
+        # Manual runtime type checking based on model field types
         for field, value in data.items():
             expected_field = ns.models[self.table_name][field]
             if isinstance(expected_field, fields.String):
@@ -88,6 +102,7 @@ class SaveData(Resource):
                 if not isinstance(value, int):
                     return make_response(jsonify({"error": f"Wrong type for field '{field}', expected integer"}), 400)
 
+        # Prepare and execute SQL insert or replace
         values = tuple(data[col] for col in self.columns)
         query = self.query_func(self.table_name, self.columns)
 
@@ -110,6 +125,7 @@ class SaveData(Resource):
 
         return make_response(jsonify({"message": "Data saved successfully"}), 201)
 
+# Factory function to create per-table resource classes dynamically
 def create_resource(table_name):
     class TableSpecificSaveData(SaveData):
         def __init__(self, *args, **kwargs):
@@ -132,13 +148,14 @@ def create_resource(table_name):
     TableSpecificSaveData.__name__ = f"Save{table_name.capitalize()}"
     return TableSpecificSaveData
 
-# Register resources
+# Dynamically register routes for each telemetry table
 for table_name in columns.keys():
     api.add_resource(create_resource(table_name), f'/{table_name}', endpoint=table_name)
 
-# Register viewer routes if applicable
+# Register read-only viewer routes if defined
 from viewer_route import register_viewer_routes
 register_viewer_routes(app)
 
+# Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
