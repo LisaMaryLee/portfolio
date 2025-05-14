@@ -1,0 +1,12 @@
+[Unit]
+Description=Device Telemetry REST API
+After=network.target mysql.service
+
+[Service]
+User=%i
+WorkingDirectory=%h/samples/device-telemetry-api
+ExecStart=%h/samples/device-telemetry-api/venv/bin/python3 %h/samples/device-telemetry-api/dt_RESTAPI.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

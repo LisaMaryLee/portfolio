@@ -1,108 +1,196 @@
-# Stack REST API
+# 📡 Device Telemetry API
 
-This project provides a dynamic, table-aware REST API for ingesting anonymized device telemetry data into a MySQL database using Flask and Flask-RESTX.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+[![Flask REST API](https://img.shields.io/badge/Framework-Flask-blue.svg)](https://flask.palletsprojects.com/) 
+[![Python](https://img.shields.io/badge/Python-3.7%2B-green.svg)](https://www.python.org/downloads/)
 
-## 📦 Features
-
-- REST API endpoints dynamically generated for each telemetry table
-- Swagger UI auto-generated for documentation and testing
-- MySQL schema versioned in `create_device_telemetry_schema.sql`
-- Systemd service integration for persistent API hosting
-- Test data loader and terminal-based MySQL viewer included
-
-## 🚀 Setup Instructions
-
-1. Clone the repo and run the setup script:
-
-```bash
-chmod +x setup_from_repo_restapi_ssh.sh
-./setup_from_repo_restapi_ssh.sh
-```
-
-2. Optional: Create a `.env` file inside `~/restapi-telemetry` to override MySQL credentials.
-
-```env
-MYSQL_HOST=localhost
-MYSQL_USER=anonusage
-MYSQL_PASSWORD=your-password
-MYSQL_DB=stack_REST
-```
-
-## ✅ Running Services
-
-- REST API: [http://<your-ip>:5000/](http://<your-ip>:5000/)
-- Live view MySQL Tables: [http://<your-ip>:5000/viewer](http://<your-ip>:5000/)
-- Terminal MySQL viewer: `python3 view_mysql_table.py`
-- Dynamic test loader: `python3 test_dynamic_api_load.py 10`
+A lightweight Flask REST API for collecting and viewing anonymized device telemetry from storage appliances. Supports real-time ingestion, dynamic Swagger documentation, and easy table viewing via a web-based UI.
 
 ---
 
-## ➕ Adding New Tables
+## 🚀 Features
 
-1. **Update Schema**
+- ✅ Swagger/OpenAPI documentation for all endpoints
+- ✅ Runtime validation of input types with error simulation for testing
+- ✅ Dynamic endpoint generation from `table_definitions.py`
+- ✅ Integrated viewer to browse last 20 entries from each table
+- ✅ Includes negative test automation (`test_negative.py`)
+- ✅ Support for `INSERT` and `INSERT OR REPLACE` per-table config
 
-Edit `create_device_telemetry_schema.sql`:
+---
 
-```sql
-CREATE TABLE IF NOT EXISTS ss_network_config (
-  SID VARCHAR(32) NOT NULL,
-  interface_name VARCHAR(64),
-  ip_address VARCHAR(64),
-  mac_address VARCHAR(64),
-  PRIMARY KEY (SID, interface_name)
-);
+## 📁 Project Structure
+
+```
+device-telemetry-api/
+├── config.py                     # MySQL connection settings
+├── dt_RESTAPI.py                # Main Flask API
+├── sql_queries.py               # SQL insert/upsert generators
+├── table_definitions.py         # Table schemas + Swagger models
+├── viewer_route.py              # Viewer UI for table data
+├── test_negative.py             # Negative scenario test script
+├── test_dynamic_api_load.py     # Load test with random values
+├── requirements.txt             # Dependencies
+├── stack_restapi.service        # Systemd service template
+├── setup/                       # Install & uninstall bash scripts
+└── README.md                    # You are here
 ```
 
-2. **Update `table_definitions.py`**
+---
 
+## 🛠️ Setup Instructions
+
+### 1. Clone the Repo
+```bash
+git clone https://github.com/LisaMaryLee/samples.git
+cd samples/device-telemetry-api
+```
+
+### 2. Configure MySQL Credentials
+Update `config.py` with your actual DB credentials:
 ```python
-columns['ss_network_config'] = [
-    'SID', 'interface_name', 'ip_address', 'mac_address'
-]
-
-ss_network_config_model = {
-    'SID': fields.String(required=True),
-    'interface_name': fields.String(required=True),
-    'ip_address': fields.String(required=True),
-    'mac_address': fields.String(required=True)
-}
-
-table_config['ss_network_config'] = 'insert_or_replace'
-models['ss_network_config'] = ss_network_config_model
+class Config:
+    MYSQL_HOST = "localhost"
+    MYSQL_USER = "your_user"
+    MYSQL_PASSWORD = "your_password"
+    MYSQL_DB = "your_database"
 ```
 
-3. **Restart Service**
-
+### 3. Create and Activate a Virtual Environment
 ```bash
-sudo systemctl restart servostack_restapi.service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-New endpoint: `POST /ss_network_config`
-
----
-
-## ✏️ Adding Columns to Existing Tables
-
-1. Modify the SQL schema with `ALTER TABLE`.
-
-2. Update `columns[...]` and the matching Swagger model in `table_definitions.py`.
-
-3. Restart the service.
-
----
-
-## 🔧 Uninstall Script
-
-To remove the service, files, and MySQL database:
-
+### 4. Start the API
 ```bash
-chmod +x uninstall_restapi_env.sh
-./uninstall_restapi_env.sh
+python3 dt_RESTAPI.py
+```
+
+The API will be available at: `http://localhost:5000/`
+
+---
+
+## 🧪 Testing the API
+
+### Negative Scenario Tests
+Run:
+```bash
+python3 test_negative.py
+```
+
+### Random Load Tests
+```bash
+python3 test_dynamic_api_load.py 10
+```
+This sends 10 random payloads to each endpoint.
+
+---
+
+## 👀 View Telemetry Data in Browser
+
+Go to:
+```
+http://localhost:5000/viewer
+```
+Use the dropdown to select a table and view its most recent entries.
+
+---
+
+## 🔥 Systemd Integration (Optional)
+
+You can register the API as a service:
+
+### `stack_restapi.service`
+```ini
+[Unit]
+Description=Device Telemetry REST API
+After=network.target mysql.service
+
+[Service]
+User=%i
+WorkingDirectory=%h/samples/device-telemetry-api
+ExecStart=%h/samples/device-telemetry-api/venv/bin/python3 %h/samples/device-telemetry-api/dt_RESTAPI.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then run:
+```bash
+sudo cp stack_restapi.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable stack_restapi
+sudo systemctl start stack_restapi
+```
+
+To uninstall:
+```bash
+bash ./setup/uninstall_restapi.sh
 ```
 
 ---
 
-## 🧪 Testing & Observability
+## 📎 Dependencies
 
-- Use `test_dynamic_api_load.py` to inject test data
-- Use `view_mysql_table.py` to view tables from the terminal
+### `requirements.txt`
+```text
+flask
+flask-restx
+mysql-connector-python
+tabulate
+faker
+```
+Install them with:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 📌 Notes
+
+- The API supports both `insert` and `insert_or_replace` logic per table.
+- Schema definitions and field-level types are stored in `table_definitions.py`.
+- Swagger UI is served by default at the root (`/`) of the app.
+
+---
+
+## 🧑‍💻 Author
+
+**Lisa Mary Lee**  
+💼 [LinkedIn](https://www.linkedin.com/in/lisamarylee)  
+📫 lisamarylee@gmail.com
+
+---
+
+## 📜 License
+
+This project is open-source and available under the [MIT License](LICENSE).
+
+### LICENSE
+```text
+MIT License
+
+Copyright (c) 2025 Lisa Mary Lee
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
