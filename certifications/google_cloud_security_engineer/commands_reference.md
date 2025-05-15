@@ -4,12 +4,6 @@
 _Last updated: May 15, 2025_
 
 ---
-
-## **1. Security Engineer Journey**
-- No specific commands (introductory content only)
-
----
-
 ## **2. Core Infrastructure Review**
 ```bash
 gcloud config set project PROJECT_ID
