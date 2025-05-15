@@ -5,8 +5,8 @@
 
 This repository presents the applied cloud analytics work completed by **Lisa Mary Lee** as part of the **Google Cloud Data Analytics Specialization**. The projects span data preparation, SQL with BigQuery, data modeling, cloud cost optimization, and visual storytelling using dashboards.
 
-
 ---
+## 📁 Repository Structure
 google_cloud_data_analytics/
 ├── 1-data-exploration-and-preparation/ # Data discovery, cleaning, and transformation
 ├── 2-visualization-and-dashboards/ # Visual storytelling and dashboard techniques
