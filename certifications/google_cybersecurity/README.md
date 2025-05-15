@@ -1,50 +1,57 @@
-# 🔐 Security in Google Cloud Certification Portfolio
+# 🛡️ Google Cybersecurity Certification Portfolio
 
-[![Certification](https://img.shields.io/badge/Google-Security_in_Cloud-blue)](https://www.coursera.org/learn/security-google-cloud-platform)  
+[![Certification](https://img.shields.io/badge/Google-Cybersecurity-blue)](https://www.coursera.org/professional-certificates/google-cybersecurity)  
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This repository showcases real-world artifacts created by Lisa Mary Lee during the **Security in Google Cloud** professional certification course. It demonstrates applied security knowledge across Google Cloud Platform (GCP), from IAM and encryption to incident response and compliance frameworks.
+This repository presents the applied cybersecurity work completed by **Lisa Mary Lee** as part of the **Google Cybersecurity Professional Certificate**. The projects span fundamentals, network security, Linux and SQL tooling, and automated security responses using Python.
 
 ---
 
 ## 📁 Course-Aligned Folder Structure
 
 ### `1-introduction-to-cloud-security`
-- Foundations of GCP security
-- Asset identification and shared responsibility models
+- Cybersecurity principles and organizational impact
+- Confidentiality, Integrity, Availability (CIA triad)
 
 ### `2-securing-gcp-infrastructure`
-- Network scanner tools (e.g., `tcp_port_scanner.py`)
-- GCP networking and firewall defense
+- Network segmentation and access control
+- Hands-on practice with IAM and security policies
 
 ### `3-data-protection-and-access-control`
-- IAM and policy enforcement (`enforce_password_policy.ps1`)
-- Access and encryption planning
+- Encryption, DLP, and file-level protections
+- Configuring and validating access rights
 
 ### `4-incident-response-and-monitoring`
-- Log triad analysis
-- Playbook for incident response planning (`incident_response_playbook.md`)
+- Event log analysis and threat detection
+- Working with SIEM platforms and IDS/IPS tools
 
 ### `5-compliance-and-risk-management`
-- NIST risk register template
-- STAR assessment responses and GCP compliance exercises
+- Governance frameworks and risk registers
+- Security assessments and reporting
 
 ### `6-capstone-and-summary`
-- Final reports and certification wrap-up
+- Capstone challenge and final documentation
+- Integrated use of tools and security principles
 
 ---
 
 ## 🎯 Skills Demonstrated
 
-- GCP IAM and access controls  
-- Network visibility and vulnerability scanning  
-- Incident detection and response workflows  
-- Alignment with NIST CSF and STAR security controls  
-- Security automation through scripting (PowerShell, Python)
+- Network security architecture and threat modeling  
+- SIEM and intrusion detection usage  
+- Bash and Python scripting for automation  
+- SQL for access audits and data validation  
+- GCP security configurations and best practices  
 
 ---
 
-## 🧑‍💻 Author
+## 📊 Grades Achieved
+
+- ✅ 93.79%, 100%, 97.03%, 95%, 95%, 92.28%, 97.03%, 97.15%
+
+---
+
+## 👩‍💻 Author
 
 **Lisa Mary Lee**  
 💼 [LinkedIn](https://www.linkedin.com/in/lisamarylee)  
@@ -54,4 +61,4 @@ This repository showcases real-world artifacts created by Lisa Mary Lee during t
 
 ## 📜 License
 
-Licensed under the [MIT License](LICENSE). All examples included were generated for educational and demonstration purposes during the Google Cloud security course.
+Licensed under the [MIT License](LICENSE). Examples included are original work or course-based derivations created for educational use.
