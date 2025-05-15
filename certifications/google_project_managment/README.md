@@ -6,6 +6,18 @@
 This portfolio showcases original artifacts developed during the Google Project Management Professional Certificate. Each file represents real-world deliverables from planning, execution, and reflection stages of a project.
 
 ---
+## 📁 Repository Structure
+
+```
+google_project_management_specialization/
+├── 1-foundations-of-project-management/          # Core PM concepts, roles, and skills
+├── 2-project-initiation/                         # Project charter, stakeholder analysis, kickoff planning
+├── 3-project-planning/                           # Scope, scheduling, budget, risk
+├── 4-project-execution/                          # Managing teams, quality, and delivery
+├── 5-agile-project-management/                   # Scrum roles, artifacts, events, and velocity tracking
+├── 6-capstone-real-world-application/            # Full-cycle project implementation and reflection
+└── README.md                                     # Portfolio overview, skills, and credentials
+```
 
 ## 📁 Folder Structure
 
@@ -34,6 +46,12 @@ This portfolio showcases original artifacts developed during the Google Project 
 - 📊 Excel, PPTX, DOCX documents from simulation projects
 - ✅ Covers end-to-end lifecycle from charter to closeout
 - 🧩 Demonstrates job-ready tools and leadership insights
+
+---
+
+## 📊 Grades Achieved
+
+- ✅ 90.90%, 92.51%, 92%, 93.41%, 92%, 92.96%
 
 ---
 

@@ -1,53 +1,59 @@
-# 🛡️ Google Cybersecurity Certification Portfolio
+# 🛡️ Google Security in Google Cloud Specialization Portfolio
 
-[![Certification](https://img.shields.io/badge/Google-Cybersecurity-blue)](https://www.coursera.org/professional-certificates/google-cybersecurity)  
+[![Certification](https://img.shields.io/badge/Google-Security_in_Cloud-blue)](https://www.coursera.org/specializations/security-google-cloud-platform)  
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This repository presents the applied cybersecurity work completed by **Lisa Mary Lee** as part of the **Google Cybersecurity Professional Certificate**. The projects span fundamentals, network security, Linux and SQL tooling, and automated security responses using Python.
+This repository showcases real-world artifacts created by **Lisa Mary Lee** during the **Security in Google Cloud Specialization** from Coursera. It demonstrates applied knowledge in configuring and securing GCP infrastructure, managing IAM roles, enforcing least-privilege access, and mitigating vulnerabilities using industry best practices.
+
+---
+
+## 📁 Repository Structure
+
+```
+google_cloud_security_specialization/
+├── 1-introduction-to-cloud-security/         # GCP shared responsibility and core IAM principles
+├── 2-securing-gcp-infrastructure/            # VPC security, firewall rules, IAM policies
+├── 3-data-protection-and-access-control/     # Encryption, access validation, KMS
+├── 4-incident-response-and-monitoring/       # Logging, alerts, SIEM integrations
+├── README.md                                 # Portfolio overview and credentials
+```
 
 ---
 
 ## 📁 Course-Aligned Folder Structure
 
 ### `1-introduction-to-cloud-security`
-- Cybersecurity principles and organizational impact
-- Confidentiality, Integrity, Availability (CIA triad)
+- GCP shared responsibility model  
+- Security foundations: CIA triad, zero trust, IAM
 
 ### `2-securing-gcp-infrastructure`
-- Network segmentation and access control
-- Hands-on practice with IAM and security policies
+- Identity and access policy enforcement  
+- Network protection using firewall and Cloud Armor
 
 ### `3-data-protection-and-access-control`
-- Encryption, DLP, and file-level protections
-- Configuring and validating access rights
+- Role-based access control  
+- Customer-managed encryption keys (CMEK) and DLP
 
 ### `4-incident-response-and-monitoring`
-- Event log analysis and threat detection
-- Working with SIEM platforms and IDS/IPS tools
-
-### `5-compliance-and-risk-management`
-- Governance frameworks and risk registers
-- Security assessments and reporting
-
-### `6-capstone-and-summary`
-- Capstone challenge and final documentation
-- Integrated use of tools and security principles
+- Logging, monitoring, and intrusion detection  
+- Threat mitigation and playbook planning  
 
 ---
 
 ## 🎯 Skills Demonstrated
 
-- Network security architecture and threat modeling  
-- SIEM and intrusion detection usage  
-- Bash and Python scripting for automation  
-- SQL for access audits and data validation  
-- GCP security configurations and best practices  
+- GCP IAM and Resource Hierarchy  
+- Firewall and VPC Security Configuration  
+- Least Privilege and Risk Mitigation Strategy  
+- Secure Cloud Storage and KMS Management  
+- DDoS Protection, Threat Detection, and Logging  
+- Automated Security Response and Remediation  
 
 ---
 
 ## 📊 Grades Achieved
 
-- ✅ 93.79%, 100%, 97.03%, 95%, 95%, 92.28%, 97.03%, 97.15%
+- ✅ 100%, 97.5%, 93.7%, 96.97%
 
 ---
 
@@ -61,4 +67,4 @@ This repository presents the applied cybersecurity work completed by **Lisa Mary
 
 ## 📜 License
 
-Licensed under the [MIT License](LICENSE). Examples included are original work or course-based derivations created for educational use.
+Licensed under the [MIT License](LICENSE). All examples are original work derived from course labs and demonstrations.
