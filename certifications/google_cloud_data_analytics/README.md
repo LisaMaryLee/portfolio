@@ -1,40 +1,72 @@
-# Google Cloud Data Analytics – Project Portfolio
+# 📊 Google Cloud Data Analytics Certification Portfolio
 
-This repository includes hands-on work completed by Lisa Lee as part of the **Google Cloud Data Analytics Specialization**, finalized on **April 19, 2025**.
+[![Certification](https://img.shields.io/badge/Google-Data_Analytics-blue)](https://www.coursera.org/specializations/gcp-data-analytics)  
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Each folder corresponds to one of the core learning phases in the specialization, from exploration to final capstone work.
+This repository presents the applied cloud analytics work completed by **Lisa Mary Lee** as part of the **Google Cloud Data Analytics Specialization**. The projects span data preparation, SQL with BigQuery, data modeling, cloud cost optimization, and visual storytelling using dashboards.
 
----
-
-## 📁 Repository Structure
-
-```
 google_cloud_data_analytics/
-├── 1-data-exploration-and-preparation/      # Data discovery, cleaning, and transformation
-├── 2-visualization-and-dashboards/          # Visual storytelling and dashboard techniques
-├── 3-sql-and-bigquery/                      # SQL queries and BigQuery data interaction
-├── 4-data-modeling-and-warehouse/           # Schema design, partitioning, and modeling strategies
-├── 5-performance-and-optimization/          # Query tuning and cost optimization practices
-├── 6-capstone-and-use-cases/                # Final projects applying all course concepts
-└── README.md                                # Overview of certification, grades, and folder map
-```
+├── 1-data-exploration-and-preparation/ # Data discovery, cleaning, and transformation
+├── 2-visualization-and-dashboards/ # Visual storytelling and dashboard techniques
+├── 3-sql-and-bigquery/ # SQL queries and BigQuery data interaction
+├── 4-data-modeling-and-warehouse/ # Schema design, partitioning, and modeling strategies
+├── 5-performance-and-optimization/ # Query tuning and cost optimization practices
+├── 6-capstone-and-use-cases/ # Final projects applying all course concepts
+└── README.md # Overview of certification, grades, and folder map
+---
+
+## 📁 Course-Aligned Folder Structure
+
+### `1-data-exploration-and-preparation`
+- Data profiling, cleaning, and transformation  
+- Exploring patterns and preparing for analysis  
+
+### `2-visualization-and-dashboards`
+- Principles of visual storytelling with data  
+- Dashboard creation using Google tools  
+
+### `3-sql-and-bigquery`
+- Querying structured data using SQL  
+- Working with BigQuery on large datasets  
+
+### `4-data-modeling-and-warehouse`
+- Schema design and partitioning strategies  
+- Designing scalable cloud-native warehouses  
+
+### `5-performance-and-optimization`
+- Query performance and cost efficiency  
+- BigQuery tuning and resource management  
+
+### `6-capstone-and-use-cases`
+- End-to-end analytics scenario  
+- Final report combining all skills and tools  
 
 ---
 
-## 📚 Courses Completed
+## 🎯 Skills Demonstrated
 
-1. Introduction to Data Analytics in Google Cloud
-2. Data Management and Storage in the Cloud
-3. Data Transformation in the Cloud
-4. The Power of Storytelling: How to Visualize Data in the Cloud
-5. Put It All Together: Prepare for a Cloud Data Analyst Job
-
-All assignments were completed and passed with high distinction:  
-✅ **Grades Achieved**: 96%, 98%, 94.5%, 97.5%, 95%
+- SQL and BigQuery for cloud-scale analytics  
+- Data cleaning, transformation, and preparation  
+- Data visualization using dashboards and reports  
+- Cloud data modeling and warehouse design  
+- Cost-aware query optimization in GCP  
 
 ---
 
-## 📝 Notes
+## 📊 Grades Achieved
 
-- Each folder contains code, queries, screenshots, or notebooks used during that section.
-- Data samples were anonymized or synthetically generated where needed.
+- ✅ 96%, 98%, 94.5%, 97.5%, 95%
+
+---
+
+## 👩‍💻 Author
+
+**Lisa Mary Lee**  
+💼 [LinkedIn](https://www.linkedin.com/in/lisamarylee)  
+📫 lisamarylee@gmail.com
+
+---
+
+## 📜 License
+
+Licensed under the [MIT License](LICENSE). Examples included are original work or course-based derivations created for educational use.
