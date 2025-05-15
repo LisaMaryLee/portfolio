@@ -1,3 +1,0 @@
-gs://open-bucket-001 - PUBLIC
-gs://confidential-data - PRIVATE
-gs://demo-bucket - PUBLIC (no IAM bindings)
