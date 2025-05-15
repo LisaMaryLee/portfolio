@@ -1,0 +1,10 @@
+organization:
+  id: "1234567890"
+  folders:
+    - name: "Engineering"
+      projects:
+        - "eng-prod"
+        - "eng-dev"
+    - name: "HR"
+      projects:
+        - "hr-tools"

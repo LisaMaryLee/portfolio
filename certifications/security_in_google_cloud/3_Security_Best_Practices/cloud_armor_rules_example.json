@@ -1,0 +1,12 @@
+{
+  "name": "deny-malicious-traffic",
+  "rules": [
+    {
+      "action": "deny(403)",
+      "description": "Block traffic from suspicious IPs",
+      "match": {
+        "expr": "origin.ip == '203.0.113.0'"
+      }
+    }
+  ]
+}

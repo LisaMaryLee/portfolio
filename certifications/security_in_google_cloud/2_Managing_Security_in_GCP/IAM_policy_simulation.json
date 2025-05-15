@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "role": "roles/editor",
+      "members": ["user:admin@example.com"]
+    },
+    {
+      "role": "roles/viewer",
+      "members": ["group:finance@example.com"]
+    }
+  ]
+}
