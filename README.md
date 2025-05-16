@@ -33,27 +33,41 @@ Each directory represents a live or maintained codebase that demonstrates my abi
 
 ## 🎯 Certifications Represented
 
-| Specialization                          | Platform         | Provider(s)                            | Completion Date |
-|----------------------------------------|------------------|----------------------------------------|-----------------|
-| Google Cloud Security Engineer         | Coursera         | Google Cloud                           | Apr 2025        |
-| Google Cybersecurity                    | Coursera         | Google                                 | Mar 2025        |
-| Google Data Analytics                   | Coursera         | Google                                 | Apr 2025        |
-| Machine Learning Specialization         | Coursera         | Stanford University & DeepLearning.AI  | May 2025        |
-| Google Project Management               | Coursera         | Google                                 | Feb 2025        |
-| IBM Product Owner                       | Coursera         | IBM & SkillUp EdTech                   | Mar 2025        |
-| IBM Scrum Master                        | Coursera         | IBM & SkillUp EdTech                   | Mar 2025        |
+| Specialization                        | Platform   | Provider(s)                                 | Completion Date |
+|--------------------------------------|------------|---------------------------------------------|-----------------|
+| Machine Learning Specialization      | Coursera   | Stanford University & DeepLearning.AI       | May 2025        |
+| Google Cloud Security Engineer       | Coursera   | Google Cloud                                | Apr 2025        |
+| Google Data Analytics                | Coursera   | Google                                      | Apr 2025        |
+| Security in Google Cloud             | Coursera   | Google Cloud                                | Mar 2025        |
+| Google Cybersecurity                 | Coursera   | Google                                      | Mar 2025        |
+| IBM Product Owner                    | Coursera   | IBM & SkillUp EdTech                        | Mar 2025        |
+| IBM Scrum Master                     | Coursera   | IBM & SkillUp EdTech                        | Mar 2025        |
+| Google Project Management            | Coursera   | Google                                      | Feb 2025        |
 
 ---
 
 ## 🧠 Key Skills Demonstrated
 
-- Cloud IAM, VPC & firewall configurations (GCP)
-- Cloud-native data pipelines with SQL & BigQuery
-- Security incident response & logging (SIEM)
-- API development & testing (Swagger, Flask)
-- Agile & Scrum project lifecycle execution
-- Supervised/unsupervised ML & neural networks
-- Product ownership and stakeholder alignment
+- 🔐 **Cloud Security & IAM Management**  
+  Fine-grained access control using IAM roles, service accounts, and audit logging in GCP; VPC hardening and Shielded VM deployments.
+
+- 🧮 **Cloud-Native Data Engineering & Analytics**  
+  Building data pipelines using SQL, BigQuery, Dataproc, and Cloud Storage; conducting exploratory data analysis and visualization in Tableau.
+
+- 📊 **SIEM & Incident Response**  
+  Implementing security monitoring, log triage, alerting workflows, and threat mitigation strategies using Google Cloud Logging and SIEM tools.
+
+- 🔁 **REST API Engineering & Tooling**  
+  Designing and implementing production-grade Flask APIs with full CRUD capabilities; validating OpenAPI specs using Swagger and Postman.
+
+- 🧠 **Machine Learning & Neural Networks**  
+  Building supervised models (linear/logistic regression, decision trees), unsupervised pipelines (clustering, anomaly detection), and recommender systems; deploying multi-class classification models using TensorFlow.
+
+- 🌀 **Agile Delivery & DevOps Practices**  
+  Leading Scrum ceremonies, creating burn-downs, retrospectives, and backlog grooming sessions across multiple project lifecycles; using Jira and Confluence.
+
+- 🧭 **Product Ownership & Strategic Planning**  
+  Developing MVP roadmaps, feature prioritization frameworks, stakeholder communication plans, and delivering customer-centric documentation.
 
 ---
 
