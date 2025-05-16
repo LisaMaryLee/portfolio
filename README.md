@@ -9,19 +9,24 @@ This repository is organized by certification and demonstrates applied knowledge
 ## 📁 Repository Structure
 
 ```
-certifications/
-├── google_cloud_data_analytics/           # Data exploration, BigQuery, Tableau, SQL, and data lifecycle labs
-├── google_cloud_security_engineer/        # IAM, VPC, Shielded VM, logging, alerting, and incident response
-├── google_cybersecurity/                  # SOC workflows, threat models, network hardening, and SIEM tools
-├── google_project_managment/              # Agile, Scrum, risk mitigation, stakeholder analysis, and planning
-├── ibm-product-owner/                     # User stories, release planning, product vision documentation
-├── ibm-scrum-master/                      # Agile ceremonies, metrics, burndown tracking, and retrospectives
-├── device-telemetry-api/                  # Flask-based telemetry API with full REST CRUD and Swagger
-├── gcp-bigdata-projects/                  # GCP cloud storage, Dataproc, and machine learning pipelines
-├── ml_specialization/                     # NumPy, scikit-learn, TensorFlow, recommender systems, RL
-└── README.md                              # This file
+.
+├── certifications/                        # Professional certifications across Google, IBM, and Coursera platforms
+│   ├── google_cloud_data_analytics/       # BigQuery, SQL, Looker Studio, and data storytelling
+│   ├── google_cloud_security_engineer/    # VPC, IAM, network policy, Shielded VM, and incident response labs
+│   ├── google_cybersecurity/              # SOC operations, threat modeling, mitigation, and endpoint protection
+│   ├── google_project_managment/          # Agile methodologies, stakeholder engagement, and project planning
+│   ├── ibm-product-owner/                 # Product strategy, vision, MVP scoping, and sprint planning
+│   ├── ibm-scrum-master/                  # Agile coaching, facilitation, burndown charts, and team dynamics
+│   └── README.md                          # Overview of certification-based work
+│
+├── gcp-bigdata-projects/                  # Cloud-native data engineering pipelines and Vertex AI integrations
+│   └── README.md                          # GCP big data project documentation and demos
+│
+├── ml_specialization/                     # Machine Learning Specialization (Andrew Ng) – NumPy, TF, RL, recommenders
+│   └── README.md                          # Machine learning coursework artifacts and project outputs
+│
+└── README.md                              # Top-level portfolio index and project overview
 ```
-
 ---
 
 ## 🎯 Certifications Represented
