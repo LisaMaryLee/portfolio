@@ -22,8 +22,7 @@ machine_learning_specialization/
 
     - The Rover was trained to land correctly on the surface, correctly between the flags as indicators after many unsuccessful attempts in learning how to do it.
     - The final landing after training the agent using appropriate parameters : 
-    ![Lunar Lander Demo](https://raw.githubusercontent.com/LisaMaryLee/samples/main/ml_specialization/3-unsupervised-and-recommenders/week3/C3W3A1/images/lunar_lander.gif)
-
+    ![Lunar Lander Demo](lunar_lander.gif)
 
 * <i>Write an algorithm for a **Movie Recommender System**</i>
     
