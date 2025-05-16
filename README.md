@@ -1,8 +1,10 @@
-# 🎓 Lisa Mary Lee's Certification Portfolios
+# 🎓 Lisa Mary Lee's Engineering Portfolio
 
-Welcome to my personal collection of **hands-on labs**, **project samples**, and **portfolio artifacts** developed during my professional upskilling through top-tier Coursera specializations in cloud, machine learning, and project management.
+Welcome to my active engineering portfolio — a curated collection of working projects, cloud-native codebases, and real-world labs built during professional certifications and hands-on development.
 
-This repository is organized by certification and demonstrates applied knowledge in cloud architecture, security engineering, data analysis, DevOps, and AI/ML engineering.
+This repo goes beyond coursework: it features production-ready APIs, machine learning pipelines, DevOps tooling, and system-level architecture that reflect my applied expertise in cloud infrastructure, ML/AI engineering, security, and technical program delivery.
+
+Each directory represents a live or maintained codebase that demonstrates my ability to architect, build, and ship technical solutions across cloud, data, and AI domains.
 
 ---
 
