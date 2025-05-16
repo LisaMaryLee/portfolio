@@ -16,6 +16,20 @@ machine_learning_specialization/
 ├── 3-unsupervised-recommenders-reinforcement/     # Clustering, anomaly detection, recommenders, RL
 ├── README.md                                       # Portfolio overview and credentials
 ```
+#### Fun goals to accomplish at the end of this specialization :
+
+* <i>Write an unsupervised learning algorithm to **Land the Lunar Lander** Using Deep Q-Learning</i>
+
+    - The Rover was trained to land correctly on the surface, correctly between the flags as indicators after many unsuccessful attempts in learning how to do it.
+    - The final landing after training the agent using appropriate parameters : 
+
+https://github.com/LisaMaryLee/samples/blob/main/ml_specialization/3-unsupervised-and-recommenders/week3/C3W3A1/video/lunar_lander.mp4
+
+* <i>Write an algorithm for a **Movie Recommender System**</i>
+    
+    - A movie database is collected based on its genre.
+    - A content based filtering and collaborative filtering algorithm is trained and the movie recommender system is implemented.
+    - It gives movie recommendentations based on the movie genre.
 
 ---
 
